@@ -1,151 +1,243 @@
 <!doctype html>
 <html lang="es">
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, initial-scale=1" />
-    <title>Estado del Despegue</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Estado del despegue — Santa Pola</title>
 
-    <style>
-        body {
-            font-family: Arial, Helvetica, sans-serif;
-            padding: 20px;
-            max-width: 700px;
-            margin: auto;
-        }
-        h1 { 
-            font-size: 1.6em; 
-            margin-bottom: 8px;
-        }
+  <style>
+    :root{
+      --max-width:960px;
+      --pad:18px;
+      --radius:16px;
+      --shadow: 0 6px 20px rgba(0,0,0,0.08);
+      --transition: 420ms cubic-bezier(.2,.9,.3,1);
+    }
 
-        .status {
-            font-size: 2rem;
-            font-weight: 700;
-            padding: 16px 20px;
-            border-radius: 10px;
-            display: inline-block;
-            background: #eee;
-            color: #444;
-        }
-        .open { background:#00d46b; color:#093b1a; }
-        .closed { background:#ff4747; color:#4f0000; }
-        .unknown { background:#f0f0f0; color:#333; }
+    html,body{height:100%;margin:0;padding:0;background:#f6f6f6;font-family:Inter,system-ui,Arial,Helvetica,sans-serif;color:#111}
+    .wrap{
+      box-sizing:border-box;
+      max-width:var(--max-width);
+      margin:20px auto;
+      padding:var(--pad);
+    }
 
-        .meta { 
-            margin-top:10px;
-            color:#666;
-            font-size:0.95rem;
-        }
-    </style>
+    h1{
+      margin:0 0 14px 0;
+      font-size:clamp(18px,4.5vw,26px);
+      letter-spacing:0.6px;
+    }
+
+    /* Contenedor grande responsivo */
+    .card{
+      width:100%;
+      background:#fff;
+      border-radius:var(--radius);
+      padding: clamp(18px,4vw,28px);
+      box-shadow:var(--shadow);
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:12px;
+      box-sizing:border-box;
+    }
+
+    /* Badge grande del estado */
+    .badge{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      width:100%;
+      border-radius:12px;
+      padding: clamp(12px,4vw,28px);
+      text-align:center;
+      font-weight:800;
+      /* tamaño tipográfico grande y responsive */
+      font-size: clamp(30px,9vw,64px);
+      color:#fff;
+      letter-spacing:1px;
+      transition: background var(--transition), transform 600ms ease;
+      will-change: background, transform;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+      user-select:none;
+    }
+
+    /* bilingual small line under main word */
+    .sub{
+      font-weight:700;
+      font-size: clamp(14px,3.2vw,18px);
+      opacity:0.95;
+      margin-top:6px;
+    }
+
+    /* meta line */
+    .meta{
+      width:100%;
+      text-align:center;
+      color:#444;
+      font-size:clamp(12px,3vw,14px);
+      margin-top:6px;
+    }
+
+    /* colors */
+    .open { background: linear-gradient(180deg,#2f9a52,#117a3f); }
+    .closed { background: linear-gradient(180deg,#8b0000,#5b0000); }
+    .unknown { background: linear-gradient(180deg,#bdbdbd,#9e9e9e); color:#222; }
+
+    /* Animación de pulso al cambiar (clase .pulse) */
+    @keyframes pulse {
+      0% { transform:scale(1); filter:brightness(1) }
+      50% { transform:scale(1.02); filter:brightness(1.04) }
+      100% { transform:scale(1); filter:brightness(1) }
+    }
+    .pulse {
+      animation: pulse 800ms ease;
+    }
+
+    /* Pequeño ajuste para pantallas muy estrechas */
+    @media (max-width:360px){
+      .badge{ font-size: clamp(22px,9.5vw,48px); padding:12px; }
+    }
+
+  </style>
 </head>
-
 <body>
-    <h1>Estado del despegue</h1>
+  <main class="wrap" role="main">
+    <h1>Estado del despegue / Takeoff status</h1>
 
-    <div id="box" class="status unknown">Cargando…</div>
-    <div id="meta" class="meta">Última actualización: —</div>
+    <section class="card" aria-labelledby="estado-title">
+      <!-- Badge principal -->
+      <div id="badge" class="badge unknown" role="status" aria-live="polite" aria-atomic="true">
+        Cargando…
+      </div>
 
+      <!-- línea bilingüe (pequeña) -->
+      <div id="sub" class="sub" aria-hidden="true"></div>
+
+      <!-- meta -->
+      <div id="meta" class="meta">Última actualización: —</div>
+    </section>
+  </main>
 
 <script>
 /* CONFIGURACIÓN */
-const SHEET_ID = "1ZJ4mVkXZyUVBRXLeiSHI2gSOt7JdcYj92bfKtPujU3g";  // <-- TU HOJA
-const GID = 0;   // pestaña ESTADO (gid=0)
+const SHEET_ID = "1ZJ4mVkXZyUVBRXLeiSHI2gSOt7JdcYj92bfKtPujU3g"; // tu ID
+const GID = 0;
+const POLL_INTERVAL_MS = 10000; // 10s
 
-/* ----------------------------------------------------------
-   FUNCIÓN ROBUSTA PARA EXTRAER JSON DE GVIZ
------------------------------------------------------------ */
+/* ELEMENTOS */
+const badge = document.getElementById('badge');
+const sub = document.getElementById('sub');
+const meta = document.getElementById('meta');
+
+/* UTIL - aplicar estado en UI (con animación) */
+function applyState(text){
+  const up = (text||'').toUpperCase().trim();
+  // quitar pulse previo y forzar reflow para permitir nueva animación
+  badge.classList.remove('pulse');
+  void badge.offsetWidth;
+
+  if(up.includes('ABIER') || up.includes('OPEN')){
+    badge.className = 'badge open';
+    badge.textContent = 'ABIERTO';
+    sub.textContent = 'OPEN';
+  } else if(up.includes('CERR') || up.includes('CLOSED')){
+    badge.className = 'badge closed';
+    badge.textContent = 'CERRADO';
+    sub.textContent = 'CLOSED';
+  } else {
+    badge.className = 'badge unknown';
+    badge.textContent = text || 'DESCONOCIDO';
+    sub.textContent = '';
+  }
+
+  // animación de pulso al cambiar
+  badge.classList.add('pulse');
+
+  // actualizar meta timestamp
+  meta.textContent = 'Última actualización: ' + new Date().toLocaleString();
+}
+
+/* ---------------------------------------------------------
+   FUNCION ROBUSTA PARA EXTRAER JSON DE GVIZ (balanceo de llaves)
+   --------------------------------------------------------- */
 async function fetchFromGviz(id){
-    const url = `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?gid=${GID}&tqx=out:json`;
-    const res = await fetch(url, {cache:"no-store"});
-    if(!res.ok) throw new Error("Error GViz HTTP " + res.status);
+  const url = `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?gid=${GID}&tqx=out:json`;
+  const res = await fetch(url, {cache:"no-store"});
+  if(!res.ok) throw new Error('gviz fetch error ' + res.status);
+  const text = await res.text();
 
-    const text = await res.text();
+  // buscar la llamada google.visualization.Query.setResponse(...);
+  let m = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*?)\);?/);
+  let jsonText = null;
 
-    // 1) Buscar setResponse( … )
-    let match = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*?)\);?/);
-
-    let jsonCandidate = null;
-
-    if (match && match[1]) {
-        let frag = match[1];
-        let start = frag.indexOf("{");
-        if (start === -1) throw new Error("No se encontró JSON dentro de setResponse()");
-        
-        // Balancear llaves
-        let depth = 0, end = -1;
-        for (let i = start; i < frag.length; i++) {
-            if (frag[i] === "{") depth++;
-            else if (frag[i] === "}") {
-                depth--;
-                if (depth === 0) { end = i; break; }
-            }
-        }
-        if (end === -1) throw new Error("JSON no está balanceado dentro de setResponse()");
-        jsonCandidate = frag.slice(start, end+1);
-    } else {
-        // Fallback global
-        let start = text.indexOf("{");
-        if (start === -1) throw new Error("No se encontró ninguna llave { ");
-
-        let depth = 0, end = -1;
-        for (let i = start; i < text.length; i++){
-            if (text[i] === "{") depth++;
-            else if (text[i] === "}"){
-                depth--;
-                if (depth === 0) { end = i; break; }
-            }
-        }
-        if (end === -1) throw new Error("JSON no balanceado en todo el documento");
-        jsonCandidate = text.slice(start, end+1);
+  if(m && m[1]) {
+    // extraer el JSON bien balanceado dentro del fragmento
+    const frag = m[1];
+    const start = frag.indexOf('{');
+    if(start === -1) throw new Error('gviz no json inside setResponse');
+    let depth = 0, end = -1;
+    for(let i = start; i < frag.length; i++){
+      if(frag[i] === '{') depth++;
+      else if(frag[i] === '}'){
+        depth--;
+        if(depth === 0){ end = i; break; }
+      }
     }
-
-    let json;
-    try {
-        json = JSON.parse(jsonCandidate);
-    } catch (e) {
-        console.error("JSON.parse falló:", e);
-        console.error("Fragmento problemático:", jsonCandidate.substring(0,400));
-        throw new Error("No se pudo interpretar el JSON de GViz");
+    if(end === -1) throw new Error('gviz json not balanced in setResponse');
+    jsonText = frag.slice(start, end+1);
+  } else {
+    // fallback global: buscar desde primera '{' hasta matching '}' global
+    const start = text.indexOf('{');
+    if(start === -1) throw new Error('gviz no json global');
+    let depth = 0, end = -1;
+    for(let i = start; i < text.length; i++){
+      if(text[i] === '{') depth++;
+      else if(text[i] === '}'){
+        depth--;
+        if(depth === 0){ end = i; break; }
+      }
     }
+    if(end === -1) throw new Error('gviz json not balanced global');
+    jsonText = text.slice(start, end+1);
+  }
 
-    const rows = json.table?.rows ?? [];
-    if (rows.length === 0) throw new Error("No hay filas en la hoja");
+  // parsear
+  let json;
+  try {
+    json = JSON.parse(jsonText);
+  } catch(e){
+    console.error('gviz parse failed', e);
+    throw new Error('gviz parse error');
+  }
 
-    const value = rows[0].c?.[0]?.v ?? "";
-    return String(value).trim();
+  const rows = (json.table && json.table.rows) ? json.table.rows : [];
+  if(rows.length === 0) throw new Error('gviz no rows');
+  const first = rows[0].c && rows[0].c[0] && rows[0].c[0].v ? String(rows[0].c[0].v).trim() : '';
+  return first;
 }
 
-/* ----------------------------------------------------------
-   MOSTRAR EL ESTADO
------------------------------------------------------------ */
-async function fetchEstado(){
-    const box = document.getElementById("box");
-    const meta = document.getElementById("meta");
-
-    try {
-        const estado = await fetchFromGviz(SHEET_ID);
-
-        if (estado.toUpperCase().includes("ABIERTO")) {
-            box.className = "status open";
-        } else if (estado.toUpperCase().includes("CERRADO")) {
-            box.className = "status closed";
-        } else {
-            box.className = "status unknown";
-        }
-
-        box.textContent = estado;
-        meta.textContent = "Última actualización: " + new Date().toLocaleString("es-ES");
-
-    } catch (err) {
-        console.error("fetchEstado error:", err);
-        box.className = "status unknown";
-        box.textContent = "Error al obtener datos";
-        meta.textContent = "Última actualización: " + new Date().toLocaleString("es-ES");
-    }
+/* ---------------------------------------------------------
+   BUCLE PRINCIPAL: obtener estado y aplicar UI
+   --------------------------------------------------------- */
+async function updateLoop(){
+  try {
+    const value = await fetchFromGviz(SHEET_ID);
+    if(!value) throw new Error('empty value');
+    applyState(value);
+  } catch(err){
+    console.error('updateLoop error', err);
+    // mostrar error mínimo en UI (pero no romper)
+    badge.className = 'badge unknown';
+    badge.textContent = 'Error al obtener datos';
+    sub.textContent = '';
+    meta.textContent = 'Última actualización: ' + new Date().toLocaleString();
+  }
 }
 
-fetchEstado();
-setInterval(fetchEstado, 60000); // refresca cada 60s
+/* iniciar polling */
+updateLoop();
+setInterval(updateLoop, POLL_INTERVAL_MS);
 </script>
-
 </body>
 </html>
