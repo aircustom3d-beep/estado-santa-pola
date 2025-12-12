@@ -1,133 +1,123 @@
 <!doctype html>
 <html lang="es">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Estado del despegue - Actualización automática</title>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Estado del despegue</title>
   <style>
-    :root{
-      --max-width:760px;
-      --pad:16px;
-      --radius:10px;
-    }
-
-    /* Layout general */
-    html,body{
-      margin:0;
-      padding:0;
-      height:100%;
-      font-family: Arial, Helvetica, sans-serif;
-      background: #fff;
-      -webkit-font-smoothing:antialiased;
-      -moz-osx-font-smoothing:grayscale;
-    }
-    .wrap{
-      box-sizing:border-box;
-      width:100%;
-      max-width:var(--max-width);
-      padding:var(--pad);
-      margin:0 auto;
-    }
-
-    h1{
-      margin:0 0 10px 0;
-      font-size:clamp(18px,4.5vw,24px);
-    }
-
-    /* Status box: flexible y 100% ancho */
-    .status{
-      display:block;
-      width:100%;
-      box-sizing:border-box;
-      padding: clamp(10px,3.5vw,20px) clamp(12px,4vw,24px);
-      border-radius:var(--radius);
-      font-weight:700;
-      text-align:center;
-      line-height:1;
-      word-break:break-word;
-      /* tamaño de fuente flexible: mínimo 20px, máximo 42px */
-      font-size: clamp(20px,8vw,42px);
-    }
-
-    /* Colores (puedes cambiar) */
-    .open { background:#2f7a2f; color:#e6f7e6; }
-    .closed { background:#8a1f26; color:#ffecec; }
-    .unknown { background:#f0f0f0; color:#333; }
-
-    .meta{ margin-top:10px; color:#666; font-size:clamp(12px,3.2vw,14px); }
-
-    /* Pequeños ajustes para móviles muy estrechos */
-    @media (max-width:360px){
-      .status{ font-size: clamp(18px,9vw,32px); padding:10px 12px; }
-      h1{ font-size:16px; }
-    }
+    body{font-family:Arial,Helvetica,sans-serif;margin:0;padding:18px;background:#fff}
+    h1{margin:0 0 12px}
+    .status{width:100%;max-width:720px;margin:0 auto;padding:16px;border-radius:10px;text-align:center;font-weight:700;font-size:clamp(20px,6vw,44px);}
+    .open{background:#2e7d32;color:#e8f5e9}
+    .closed{background:#8b0000;color:#fff1f1}
+    .unknown{background:#efefef;color:#222}
+    .meta{max-width:720px;margin:10px auto;color:#666;font-size:14px}
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <h1>Estado del despegue</h1>
-    <div id="status" class="status unknown">Cargando…</div>
-    <div id="last" class="meta">Última actualización: —</div>
-  </div>
+  <h1>Estado del despegue</h1>
+  <div id="box" class="status unknown">Cargando…</div>
+  <div id="meta" class="meta">Última actualización: —</div>
 
-  <script>
-    // NUEVO SHEET ID (ejemplo tu id)
-    const SHEET_ID = '1ZJ4mVkXZyUVBRXLeiSHl2gSOt7JdcYj92bfktPujU3g';
-    const GID = '0';
-    const POLL_INTERVAL_MS = 5000; // cada 5s
+<script>
+/*
+  CONFIGURA AQUÍ:
+  - Si tienes el SHEET_ID (docs.google.com/spreadsheets/d/<SHEET_ID>/edit) ponlo abajo.
+  - Si no, pega la URL pubhtml (la que me diste) en PUBLISHED_PUBHTML.
+  El script probará gviz con SHEET_ID si está definido; si falla usará PUBLISHED_PUBHTML.
+*/
+const SHEET_ID = ''; // si tienes el ID tipo 1AbC... ponlo aquí; si no deja vacío ''
+const PUBLISHED_PUBHTML = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSXHCR_ic2GfcspciaHjEo3w-D_IZS5QXrTdUNL9A2Y-QEKFe-uj16eVRujaueVXlcwPpfppasDtV3f/pubhtml?gid=0&single=true';
 
-    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?gid=${GID}&tqx=out:json`;
+const GID = '0';
+const POLL_INTERVAL_MS = 7000; // tiempo entre consultas (en ms)
 
-    async function fetchSheet(){
+const box = document.getElementById('box');
+const meta = document.getElementById('meta');
+
+function setStatus(text, cls){
+  box.textContent = text;
+  box.className = 'status ' + cls;
+  meta.textContent = 'Última actualización: ' + new Date().toLocaleString();
+}
+
+async function tryGviz(id){
+  if(!id) throw new Error('no id');
+  const url = `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?gid=${GID}&tqx=out:json`;
+  const res = await fetch(url, {cache: "no-store"});
+  if(!res.ok) throw new Error('gviz fetch error ' + res.status);
+  const text = await res.text();
+  // la respuesta viene con texto antes del JSON; buscamos la primera llave {
+  const start = text.indexOf('{');
+  if(start === -1) throw new Error('gviz no json');
+  const json = JSON.parse(text.slice(start));
+  const rows = (json.table && json.table.rows) ? json.table.rows : [];
+  if(rows.length === 0) throw new Error('gviz no rows');
+  const first = rows[0].c && rows[0].c[0] && rows[0].c[0].v ? String(rows[0].c[0].v).trim() : '';
+  return first;
+}
+
+// Si solo tienes el pubhtml (URL pública), vamos a extraer A1 desde la tabla HTML
+async function tryPubHtml(pubUrl){
+  if(!pubUrl) throw new Error('no puburl');
+  // Convertimos pubhtml -> pub?output=csv en caso de preferir CSV (no siempre necesario)
+  // Pero aquí usaremos DOM parsing del HTML publicado, más fiable para tablas complejas
+  const res = await fetch(pubUrl, {cache: "no-store"});
+  if(!res.ok) throw new Error('pubhtml fetch error ' + res.status);
+  const text = await res.text();
+  // Parseamos HTML y buscamos la primera celda de datos
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(text, 'text/html');
+  // Google publica tablas; buscamos td dentro de table
+  const td = doc.querySelector('table tbody tr td');
+  if(td && td.textContent && td.textContent.trim().length){
+    return td.textContent.trim();
+  }
+  // Si no hay td, intentamos CSV como último recurso:
+  const csvUrl = pubUrl.replace('/pubhtml','/pub?output=csv');
+  const r2 = await fetch(csvUrl, {cache:"no-store"});
+  if(r2.ok){
+    const csv = await r2.text();
+    const firstLine = csv.split(/\r?\n/)[0] || '';
+    // quitar comillas iniciales/finales
+    return firstLine.replace(/^"|"$/g,'').trim();
+  }
+  throw new Error('no data in pubhtml');
+}
+
+async function fetchEstado(){
+  try {
+    let value = null;
+    // 1. intentar gviz con SHEET_ID si hay
+    if(SHEET_ID){
       try {
-        const res = await fetch(url, {cache:"no-store"});
-        const text = await res.text();
-        const jsonText = text.replace(/^[^\{]+/,'');
-        const data = JSON.parse(jsonText);
-        const rows = data.table && data.table.rows ? data.table.rows : [];
-        let estado = null;
-        if(rows.length>0 && rows[0].c && rows[0].c[0] && rows[0].c[0].v !== null){
-          estado = String(rows[0].c[0].v).trim().toUpperCase();
-        }
-        updateUI(estado);
-      } catch (e) {
-        console.error(e);
-        updateUI(null,true);
+        value = await tryGviz(SHEET_ID);
+      } catch(e){
+        //console.warn('gviz failed', e);
       }
     }
-
-    function updateUI(estado, error=false){
-      const el = document.getElementById('status');
-      const last = document.getElementById('last');
-      const now = new Date().toLocaleString();
-
-      if(error){
-        el.textContent = 'Error al obtener datos';
-        el.className = 'status unknown';
-        last.textContent = 'Última actualización: ' + now;
-        return;
+    // 2. si no lo conseguimos, intentar pubhtml (tu enlace publicado)
+    if(!value){
+      try {
+        value = await tryPubHtml(PUBLISHED_PUBHTML);
+      } catch(e){
+        throw e;
       }
-
-      if(!estado){
-        el.textContent = 'Estado desconocido';
-        el.className = 'status unknown';
-      } else if(estado.includes('ABIER')){
-        el.textContent = 'ABIERTO';
-        el.className = 'status open';
-      } else if(estado.includes('CERR')){
-        el.textContent = 'CERRADO';
-        el.className = 'status closed';
-      } else {
-        el.textContent = estado;
-        el.className = 'status unknown';
-      }
-
-      last.textContent = 'Última actualización: ' + now;
     }
+    if(!value) throw new Error('vacío');
+    const up = value.toUpperCase();
+    if(up.includes('ABIER')) setStatus('ABIERTO', 'open');
+    else if(up.includes('CERR')) setStatus('CERRADO', 'closed');
+    else setStatus(value, 'unknown');
+  } catch(err){
+    console.error('fetchEstado error', err);
+    setStatus('Error al obtener datos', 'unknown');
+  }
+}
 
-    // iniciar polling
-    fetchSheet();
-    setInterval(fetchSheet, POLL_INTERVAL_MS);
-  </script>
+// inicial y polling
+fetchEstado();
+setInterval(fetchEstado, POLL_INTERVAL_MS);
+</script>
 </body>
 </html>
