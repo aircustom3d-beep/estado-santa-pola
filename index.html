@@ -20,17 +20,11 @@
   <div id="meta" class="meta">Última actualización: —</div>
 
 <script>
-/*
-  CONFIGURA AQUÍ:
-  - Si tienes el SHEET_ID (docs.google.com/spreadsheets/d/<SHEET_ID>/edit) ponlo abajo.
-  - Si no, pega la URL pubhtml (la que me diste) en PUBLISHED_PUBHTML.
-  El script probará gviz con SHEET_ID si está definido; si falla usará PUBLISHED_PUBHTML.
-*/
-const SHEET_ID = ''; // si tienes el ID tipo 1AbC... ponlo aquí; si no deja vacío ''
+/* Configuración: pubhtml que abriste en el navegador */
+const SHEET_ID = ''; // dejamos vacío porque usaremos pubhtml directamente
 const PUBLISHED_PUBHTML = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSXHCR_ic2GfcspciaHjEo3w-D_IZS5QXrTdUNL9A2Y-QEKFe-uj16eVRujaueVXlcwPpfppasDtV3f/pubhtml?gid=0&single=true';
-
 const GID = '0';
-const POLL_INTERVAL_MS = 7000; // tiempo entre consultas (en ms)
+const POLL_INTERVAL_MS = 10000; // 10 segundos entre consultas
 
 const box = document.getElementById('box');
 const meta = document.getElementById('meta');
@@ -41,69 +35,33 @@ function setStatus(text, cls){
   meta.textContent = 'Última actualización: ' + new Date().toLocaleString();
 }
 
-async function tryGviz(id){
-  if(!id) throw new Error('no id');
-  const url = `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?gid=${GID}&tqx=out:json`;
-  const res = await fetch(url, {cache: "no-store"});
-  if(!res.ok) throw new Error('gviz fetch error ' + res.status);
-  const text = await res.text();
-  // la respuesta viene con texto antes del JSON; buscamos la primera llave {
-  const start = text.indexOf('{');
-  if(start === -1) throw new Error('gviz no json');
-  const json = JSON.parse(text.slice(start));
-  const rows = (json.table && json.table.rows) ? json.table.rows : [];
-  if(rows.length === 0) throw new Error('gviz no rows');
-  const first = rows[0].c && rows[0].c[0] && rows[0].c[0].v ? String(rows[0].c[0].v).trim() : '';
-  return first;
-}
-
-// Si solo tienes el pubhtml (URL pública), vamos a extraer A1 desde la tabla HTML
 async function tryPubHtml(pubUrl){
-  if(!pubUrl) throw new Error('no puburl');
-  // Convertimos pubhtml -> pub?output=csv en caso de preferir CSV (no siempre necesario)
-  // Pero aquí usaremos DOM parsing del HTML publicado, más fiable para tablas complejas
   const res = await fetch(pubUrl, {cache: "no-store"});
   if(!res.ok) throw new Error('pubhtml fetch error ' + res.status);
   const text = await res.text();
-  // Parseamos HTML y buscamos la primera celda de datos
   const parser = new DOMParser();
   const doc = parser.parseFromString(text, 'text/html');
-  // Google publica tablas; buscamos td dentro de table
+  // buscar primera celda de tabla generada por Google
   const td = doc.querySelector('table tbody tr td');
   if(td && td.textContent && td.textContent.trim().length){
     return td.textContent.trim();
   }
-  // Si no hay td, intentamos CSV como último recurso:
+  // fallback a CSV si no hay tabla detectada
   const csvUrl = pubUrl.replace('/pubhtml','/pub?output=csv');
   const r2 = await fetch(csvUrl, {cache:"no-store"});
   if(r2.ok){
     const csv = await r2.text();
     const firstLine = csv.split(/\r?\n/)[0] || '';
-    // quitar comillas iniciales/finales
     return firstLine.replace(/^"|"$/g,'').trim();
   }
-  throw new Error('no data in pubhtml');
+  throw new Error('no data found in pubhtml/csv');
 }
 
 async function fetchEstado(){
   try {
     let value = null;
-    // 1. intentar gviz con SHEET_ID si hay
-    if(SHEET_ID){
-      try {
-        value = await tryGviz(SHEET_ID);
-      } catch(e){
-        //console.warn('gviz failed', e);
-      }
-    }
-    // 2. si no lo conseguimos, intentar pubhtml (tu enlace publicado)
-    if(!value){
-      try {
-        value = await tryPubHtml(PUBLISHED_PUBHTML);
-      } catch(e){
-        throw e;
-      }
-    }
+    // solo pubhtml (porque abriste y funciona)
+    value = await tryPubHtml(PUBLISHED_PUBHTML);
     if(!value) throw new Error('vacío');
     const up = value.toUpperCase();
     if(up.includes('ABIER')) setStatus('ABIERTO', 'open');
@@ -115,7 +73,7 @@ async function fetchEstado(){
   }
 }
 
-// inicial y polling
+// iniciar y polling
 fetchEstado();
 setInterval(fetchEstado, POLL_INTERVAL_MS);
 </script>
