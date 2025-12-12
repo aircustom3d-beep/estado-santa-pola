@@ -2,177 +2,217 @@
 <html lang="es">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Estado del despegue — Santa Pola</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Estado del despegue / Takeoff status</title>
 
   <style>
-    :root{
-      --max-width:960px;
-      --pad:18px;
-      --radius:16px;
-      --shadow: 0 6px 20px rgba(0,0,0,0.08);
-      --transition: 420ms cubic-bezier(.2,.9,.3,1);
-    }
-
-    html,body{height:100%;margin:0;padding:0;background:#f6f6f6;font-family:Inter,system-ui,Arial,Helvetica,sans-serif;color:#111}
-    .wrap{
+    /* Reset básico y layout de pantalla completa */
+    html,body{
+      height:100%;
+      margin:0;
+      padding:0;
       box-sizing:border-box;
-      max-width:var(--max-width);
-      margin:20px auto;
-      padding:var(--pad);
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      background:#0f1720; /* fondo oscuro */
+      color:#fff;
+      font-family:Inter,system-ui,Arial,Helvetica,sans-serif;
+      overflow:hidden; /* ¡sin scroll! */
     }
+    *,*::before,*::after{box-sizing:inherit}
 
-    h1{
-      margin:0 0 14px 0;
-      font-size:clamp(18px,4.5vw,26px);
-      letter-spacing:0.6px;
-    }
-
-    /* Contenedor grande responsivo */
-    .card{
-      width:100%;
-      background:#fff;
-      border-radius:var(--radius);
-      padding: clamp(18px,4vw,28px);
-      box-shadow:var(--shadow);
-      display:flex;
-      flex-direction:column;
-      align-items:center;
-      gap:12px;
-      box-sizing:border-box;
-    }
-
-    /* Badge grande del estado */
-    .badge{
+    /* Contenedor que ocupa toda la ventana */
+    .viewport {
+      height:100vh;            /* ocupa toda la pantalla */
       display:flex;
       align-items:center;
       justify-content:center;
+      padding:env(safe-area-inset-top,18px) env(safe-area-inset-right,12px) env(safe-area-inset-bottom,18px) env(safe-area-inset-left,12px);
+    }
+
+    /* Card centrada y que se ajusta al espacio disponible */
+    .card {
       width:100%;
-      border-radius:12px;
-      padding: clamp(12px,4vw,28px);
-      text-align:center;
-      font-weight:800;
-      /* tamaño tipográfico grande y responsive */
-      font-size: clamp(30px,9vw,64px);
-      color:#fff;
-      letter-spacing:1px;
-      transition: background var(--transition), transform 600ms ease;
-      will-change: background, transform;
-      box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+      height:100%;
+      max-width:980px;
+      max-height:100%;
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));
+      border-radius:16px;
+      padding:clamp(12px,3.5vw,22px);
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      gap:12px;
+      box-shadow: 0 10px 40px rgba(2,6,23,0.6);
+      border:1px solid rgba(255,255,255,0.03);
+      overflow:hidden; /* evitar scroll interno */
+    }
+
+    /* Header bilingüe pequeño, ocupando mínimo */
+    .title {
+      width:100%;
+      display:flex;
+      justify-content:center;
+      align-items:baseline;
+      gap:10px;
+      margin:0;
+      padding:0;
+      line-height:1;
       user-select:none;
     }
-
-    /* bilingual small line under main word */
-    .sub{
+    .title .main {
       font-weight:700;
-      font-size: clamp(14px,3.2vw,18px);
-      opacity:0.95;
-      margin-top:6px;
-    }
-
-    /* meta line */
-    .meta{
-      width:100%;
+      font-size:clamp(14px,3.8vw,18px);
+      color:#e6eef6;
+      letter-spacing:0.8px;
       text-align:center;
-      color:#444;
-      font-size:clamp(12px,3vw,14px);
-      margin-top:6px;
+    }
+    .title .sub {
+      font-weight:600;
+      font-size:clamp(11px,2.8vw,13px);
+      color:#a8b6c6;
+      opacity:0.95;
     }
 
-    /* colors */
-    .open { background: linear-gradient(180deg,#2f9a52,#117a3f); }
-    .closed { background: linear-gradient(180deg,#8b0000,#5b0000); }
-    .unknown { background: linear-gradient(180deg,#bdbdbd,#9e9e9e); color:#222; }
+    /* Badge: ocupa el hueco central y se escala para que nunca desborde */
+    .badge {
+      width:100%;
+      /* máxima altura: restar espacio para header y meta: usa calc con vh */
+      max-height: calc(100vh - 140px); /* ajustable */
+      min-height: 64px;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      border-radius:12px;
+      padding: clamp(10px,3.5vw,28px);
+      text-align:center;
+      font-weight:900;
+      color:#fff;
+      letter-spacing:1px;
+      /* tamaño responsivo: usa vh para que escale con la ventana */
+      font-size: clamp(20px, 6.5vh, 64px);
+      line-height:1;
+      transition: transform 420ms cubic-bezier(.2,.9,.3,1), box-shadow 420ms, background 420ms, color 420ms;
+      will-change: transform, box-shadow, background;
+      overflow:hidden;
+    }
 
-    /* Animación de pulso al cambiar (clase .pulse) */
+    .badge .mainText { display:block; width:100%; white-space:nowrap; text-overflow:ellipsis; overflow:hidden; }
+    .badge .sub { margin-top:8px; font-weight:700; font-size:clamp(10px,2.6vw,16px); opacity:0.95; }
+
+    /* Meta line */
+    .meta { margin-top:6px; color:#cbd5e1; font-size:clamp(11px,2.6vw,13px); text-align:center; opacity:0.95; }
+
+    /* Estados (colores adaptados para contraste) */
+    .open { background: linear-gradient(180deg,#06d6a0,#028a5f); color:#001a0f; box-shadow: 0 12px 40px rgba(3,139,99,0.18); }
+    .closed { background: linear-gradient(180deg,#ff5b5b,#9b0e0e); color:#2b0000; box-shadow: 0 12px 40px rgba(155,14,14,0.18); }
+    .unknown{ background: linear-gradient(180deg,#9aa0a6,#6f757a); color:#0f1011; box-shadow: 0 8px 28px rgba(0,0,0,0.28); }
+
+    /* Animaciones para visibilidad */
+    @keyframes pop {
+      0% { transform: scale(0.94); opacity:0.0 }
+      60% { transform: scale(1.03); opacity:1 }
+      100% { transform: scale(1); opacity:1 }
+    }
+    .pop { animation: pop 520ms cubic-bezier(.2,.9,.3,1) both; }
+
     @keyframes pulse {
-      0% { transform:scale(1); filter:brightness(1) }
-      50% { transform:scale(1.02); filter:brightness(1.04) }
-      100% { transform:scale(1); filter:brightness(1) }
+      0% { transform: scale(1) }
+      50% { transform: scale(1.02) }
+      100% { transform: scale(1) }
     }
-    .pulse {
-      animation: pulse 800ms ease;
+    .pulse { animation: pulse 880ms ease; }
+
+    /* Evitar animaciones si user pide reduced motion */
+    @media (prefers-reduced-motion: reduce){
+      .pop, .pulse { animation: none !important; }
+      .badge { transition: none !important; }
     }
 
-    /* Pequeño ajuste para pantallas muy estrechas */
-    @media (max-width:360px){
-      .badge{ font-size: clamp(22px,9.5vw,48px); padding:12px; }
+    /* Ajuste extra para pantallas muy estrechas (apilar) */
+    @media (max-width:420px){
+      .card { padding:12px; border-radius:10px; }
+      .badge { font-size: clamp(18px, 8.5vh, 52px); max-height: calc(100vh - 120px); }
     }
 
+    /* If embedded inside an iframe from Sites, ensure the outer iframe uses 100vh.
+       In Google Sites: set the embed height to 100vh (or a high px value like 800px)
+       — instrucciones abajo. */
   </style>
 </head>
 <body>
-  <main class="wrap" role="main">
-    <h1>Estado del despegue / Takeoff status</h1>
-
-    <section class="card" aria-labelledby="estado-title">
-      <!-- Badge principal -->
-      <div id="badge" class="badge unknown" role="status" aria-live="polite" aria-atomic="true">
-        Cargando…
+  <div class="viewport">
+    <div class="card" role="main" aria-live="polite">
+      <div class="title" aria-hidden="true">
+        <div class="main">ESTADO DEL DESPEGUE</div>
+        <div class="sub">/ TAKEOFF STATUS</div>
       </div>
 
-      <!-- línea bilingüe (pequeña) -->
-      <div id="sub" class="sub" aria-hidden="true"></div>
+      <div id="badge" class="badge unknown pop" role="status" aria-atomic="true" aria-live="polite">
+        <span class="mainText" id="mainText">Cargando…</span>
+        <span class="sub" id="subText"></span>
+      </div>
 
-      <!-- meta -->
       <div id="meta" class="meta">Última actualización: —</div>
-    </section>
-  </main>
+    </div>
+  </div>
 
 <script>
-/* CONFIGURACIÓN */
-const SHEET_ID = "1ZJ4mVkXZyUVBRXLeiSHI2gSOt7JdcYj92bfKtPujU3g"; // tu ID
+/* ---------- Configuración ---------- */
+const SHEET_ID = "1ZJ4mVkXZyUVBRXLeiSHI2gSOt7JdcYj92bfKtPujU3g";
 const GID = 0;
-const POLL_INTERVAL_MS = 10000; // 10s
+const POLL_INTERVAL_MS = 10000; // consulta suave (no recarga)
+const FULL_RELOAD_MS = 15000;   // recarga completa cada 15s (si quieres quitarla, elimina este setInterval)
 
-/* ELEMENTOS */
 const badge = document.getElementById('badge');
-const sub = document.getElementById('sub');
+const mainText = document.getElementById('mainText');
+const subText = document.getElementById('subText');
 const meta = document.getElementById('meta');
 
-/* UTIL - aplicar estado en UI (con animación) */
+/* Aplica estado y animaciones (asegura que el texto nunca desborde) */
 function applyState(text){
   const up = (text||'').toUpperCase().trim();
-  // quitar pulse previo y forzar reflow para permitir nueva animación
-  badge.classList.remove('pulse');
+  // reset classes then add to trigger animations
+  badge.classList.remove('open','closed','unknown','pop','pulse');
   void badge.offsetWidth;
 
   if(up.includes('ABIER') || up.includes('OPEN')){
-    badge.className = 'badge open';
-    badge.textContent = 'ABIERTO';
-    sub.textContent = 'OPEN';
+    badge.classList.add('open','pop','pulse');
+    mainText.textContent = 'ABIERTO';
+    subText.textContent = 'OPEN';
   } else if(up.includes('CERR') || up.includes('CLOSED')){
-    badge.className = 'badge closed';
-    badge.textContent = 'CERRADO';
-    sub.textContent = 'CLOSED';
+    badge.classList.add('closed','pop','pulse');
+    mainText.textContent = 'CERRADO';
+    subText.textContent = 'CLOSED';
   } else {
-    badge.className = 'badge unknown';
-    badge.textContent = text || 'DESCONOCIDO';
-    sub.textContent = '';
+    badge.classList.add('unknown','pop');
+    mainText.textContent = text || 'DESCONOCIDO';
+    subText.textContent = '';
   }
 
-  // animación de pulso al cambiar
-  badge.classList.add('pulse');
+  // forzar que el texto no haga wrap que cause scroll: trim y si muy largo, cortar
+  const maxLen = 18; // ajustar: número de caracteres visibles sin overflow
+  if(mainText.textContent.length > maxLen){
+    mainText.textContent = mainText.textContent.slice(0, maxLen-1) + '…';
+  }
 
-  // actualizar meta timestamp
   meta.textContent = 'Última actualización: ' + new Date().toLocaleString();
 }
 
-/* ---------------------------------------------------------
-   FUNCION ROBUSTA PARA EXTRAER JSON DE GVIZ (balanceo de llaves)
-   --------------------------------------------------------- */
+/* ---------- GViz fetch robusto ---------- */
 async function fetchFromGviz(id){
   const url = `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?gid=${GID}&tqx=out:json`;
   const res = await fetch(url, {cache:"no-store"});
   if(!res.ok) throw new Error('gviz fetch error ' + res.status);
   const text = await res.text();
 
-  // buscar la llamada google.visualization.Query.setResponse(...);
+  // buscar setResponse(...) y extraer JSON balanceado
   let m = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*?)\);?/);
   let jsonText = null;
 
-  if(m && m[1]) {
-    // extraer el JSON bien balanceado dentro del fragmento
+  if(m && m[1]){
     const frag = m[1];
     const start = frag.indexOf('{');
     if(start === -1) throw new Error('gviz no json inside setResponse');
@@ -187,7 +227,7 @@ async function fetchFromGviz(id){
     if(end === -1) throw new Error('gviz json not balanced in setResponse');
     jsonText = frag.slice(start, end+1);
   } else {
-    // fallback global: buscar desde primera '{' hasta matching '}' global
+    // fallback: global balanceo
     const start = text.indexOf('{');
     if(start === -1) throw new Error('gviz no json global');
     let depth = 0, end = -1;
@@ -202,14 +242,8 @@ async function fetchFromGviz(id){
     jsonText = text.slice(start, end+1);
   }
 
-  // parsear
   let json;
-  try {
-    json = JSON.parse(jsonText);
-  } catch(e){
-    console.error('gviz parse failed', e);
-    throw new Error('gviz parse error');
-  }
+  try { json = JSON.parse(jsonText); } catch(e) { console.error('gviz parse failed', e); throw new Error('gviz parse error'); }
 
   const rows = (json.table && json.table.rows) ? json.table.rows : [];
   if(rows.length === 0) throw new Error('gviz no rows');
@@ -217,27 +251,31 @@ async function fetchFromGviz(id){
   return first;
 }
 
-/* ---------------------------------------------------------
-   BUCLE PRINCIPAL: obtener estado y aplicar UI
-   --------------------------------------------------------- */
-async function updateLoop(){
+/* ---------- Loop principal ---------- */
+async function updateOnce(){
   try {
     const value = await fetchFromGviz(SHEET_ID);
-    if(!value) throw new Error('empty value');
+    if(!value) throw new Error('empty');
     applyState(value);
   } catch(err){
-    console.error('updateLoop error', err);
-    // mostrar error mínimo en UI (pero no romper)
-    badge.className = 'badge unknown';
-    badge.textContent = 'Error al obtener datos';
-    sub.textContent = '';
+    console.error('updateOnce error', err);
+    badge.classList.remove('open','closed');
+    badge.classList.add('unknown');
+    mainText.textContent = 'Error al obtener datos';
+    subText.textContent = '';
     meta.textContent = 'Última actualización: ' + new Date().toLocaleString();
   }
 }
 
-/* iniciar polling */
-updateLoop();
-setInterval(updateLoop, POLL_INTERVAL_MS);
+/* iniciar */
+updateOnce();
+/* polling interno para suavizar entre recargas */
+setInterval(updateOnce, POLL_INTERVAL_MS);
+
+/* recarga completa cada 15s (fallback) */
+setInterval(() => {
+  try { window.location.reload(true); } catch(e) { window.location.reload(); }
+}, FULL_RELOAD_MS);
 </script>
 </body>
 </html>
