@@ -3,69 +3,118 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Estado Despegue - Actualización automática</title>
+  <title>Estado del despegue - Actualización automática</title>
   <style>
-    body { font-family: Arial, Helvetica, sans-serif; padding:20px; max-width:700px; margin:auto; }
-    h1 { font-size:1.6rem; margin-bottom:8px; }
-    .status { font-size:2rem; font-weight:700; padding:16px 20px; border-radius:10px; display:inline-block; }
-    .open { background:#dff0d8; color:#264d18; }
-    .closed { background:#f8d7da; color:#5a1218; }
+    :root{
+      --max-width:760px;
+      --pad:16px;
+      --radius:10px;
+    }
+
+    /* Layout general */
+    html,body{
+      margin:0;
+      padding:0;
+      height:100%;
+      font-family: Arial, Helvetica, sans-serif;
+      background: #fff;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+    }
+    .wrap{
+      box-sizing:border-box;
+      width:100%;
+      max-width:var(--max-width);
+      padding:var(--pad);
+      margin:0 auto;
+    }
+
+    h1{
+      margin:0 0 10px 0;
+      font-size:clamp(18px,4.5vw,24px);
+    }
+
+    /* Status box: flexible y 100% ancho */
+    .status{
+      display:block;
+      width:100%;
+      box-sizing:border-box;
+      padding: clamp(10px,3.5vw,20px) clamp(12px,4vw,24px);
+      border-radius:var(--radius);
+      font-weight:700;
+      text-align:center;
+      line-height:1;
+      word-break:break-word;
+      /* tamaño de fuente flexible: mínimo 20px, máximo 42px */
+      font-size: clamp(20px,8vw,42px);
+    }
+
+    /* Colores (puedes cambiar) */
+    .open { background:#2f7a2f; color:#e6f7e6; }
+    .closed { background:#8a1f26; color:#ffecec; }
     .unknown { background:#f0f0f0; color:#333; }
-    .meta { margin-top:10px; color:#666; font-size:0.95rem; }
+
+    .meta{ margin-top:10px; color:#666; font-size:clamp(12px,3.2vw,14px); }
+
+    /* Pequeños ajustes para móviles muy estrechos */
+    @media (max-width:360px){
+      .status{ font-size: clamp(18px,9vw,32px); padding:10px 12px; }
+      h1{ font-size:16px; }
+    }
   </style>
 </head>
 <body>
-  <h1>Estado del despegue</h1>
-  <div id="status" class="status unknown">Cargando…</div>
-  <div id="last" class="meta">Última actualización: —</div>
+  <div class="wrap">
+    <h1>Estado del despegue</h1>
+    <div id="status" class="status unknown">Cargando…</div>
+    <div id="last" class="meta">Última actualización: —</div>
+  </div>
 
   <script>
-    // SHEET_ID exacto (tu hoja)
-    const SHEET_ID = '1L6Su_LTkbGDTh4ZV-CCfDLdZkKs--E98-_NZnHSNwwg';
+    // NUEVO SHEET ID (ejemplo tu id)
+    const SHEET_ID = '1ZJ4mVkXZyUVBRXLeiSHl2gSOt7JdcYj92bfktPujU3g';
     const GID = '0';
     const POLL_INTERVAL_MS = 5000; // cada 5s
 
     const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?gid=${GID}&tqx=out:json`;
 
-    async function fetchSheet() {
+    async function fetchSheet(){
       try {
-        const res = await fetch(url, {cache: "no-store"});
+        const res = await fetch(url, {cache:"no-store"});
         const text = await res.text();
-        const jsonText = text.replace(/^[^\{]+/, '');
+        const jsonText = text.replace(/^[^\{]+/,'');
         const data = JSON.parse(jsonText);
         const rows = data.table && data.table.rows ? data.table.rows : [];
         let estado = null;
-
-        if (rows.length > 0 && rows[0].c && rows[0].c[0] && rows[0].c[0].v !== null) {
+        if(rows.length>0 && rows[0].c && rows[0].c[0] && rows[0].c[0].v !== null){
           estado = String(rows[0].c[0].v).trim().toUpperCase();
         }
-
         updateUI(estado);
-      } catch (err) {
-        console.error('Error al leer el Sheet', err);
-        updateUI(null, true);
+      } catch (e) {
+        console.error(e);
+        updateUI(null,true);
       }
     }
 
-    function updateUI(estado, error=false) {
+    function updateUI(estado, error=false){
       const el = document.getElementById('status');
       const last = document.getElementById('last');
       const now = new Date().toLocaleString();
 
-      if (error) {
+      if(error){
         el.textContent = 'Error al obtener datos';
         el.className = 'status unknown';
         last.textContent = 'Última actualización: ' + now;
         return;
       }
 
-      if (!estado) {
+      if(!estado){
         el.textContent = 'Estado desconocido';
         el.className = 'status unknown';
-      } else if (estado.includes('ABIER')) {
+      } else if(estado.includes('ABIER')){
         el.textContent = 'ABIERTO';
         el.className = 'status open';
-      } else if (estado.includes('CERR')) {
+      } else if(estado.includes('CERR')){
         el.textContent = 'CERRADO';
         el.className = 'status closed';
       } else {
@@ -76,7 +125,7 @@
       last.textContent = 'Última actualización: ' + now;
     }
 
-    // inicia
+    // iniciar polling
     fetchSheet();
     setInterval(fetchSheet, POLL_INTERVAL_MS);
   </script>
