@@ -1,105 +1,93 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Estado del despegue</title>
-  <style>
-    body{font-family:Arial,Helvetica,sans-serif;margin:0;padding:18px;background:#fff}
-    h1{margin:0 0 12px}
-    .status{width:100%;max-width:720px;margin:0 auto;padding:16px;border-radius:10px;text-align:center;font-weight:700;font-size:clamp(20px,6vw,44px);}
-    .open{background:#2e7d32;color:#e8f5e9}
-    .closed{background:#8b0000;color:#fff1f1}
-    .unknown{background:#efefef;color:#222}
-    .meta{max-width:720px;margin:10px auto;color:#666;font-size:14px}
-  </style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Estado del Despegue</title>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Arial Black', Arial, Helvetica, sans-serif;
+            background: #0d141d;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            width: min(95%, 900px);
+            background: rgba(255, 255, 255, 0.05);
+            padding: 30px 20px 50px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 0 40px rgba(0,0,0,0.4);
+        }
+
+        h1 {
+            font-size: clamp(22px, 4vw, 38px);
+            margin-bottom: 5px;
+            font-weight: 900;
+        }
+
+        h2 {
+            font-size: clamp(14px, 2.5vw, 20px);
+            margin-top: 0;
+            margin-bottom: 25px;
+            font-weight: 800;
+            opacity: 0.85;
+        }
+
+        #estadoBox {
+            width: 100%;
+            height: clamp(200px, 45vh, 400px);
+            background: linear-gradient(to bottom right, #27db8d, #1e8a55);
+            border-radius: 18px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            padding: 20px;
+        }
+
+        #estadoTexto {
+            font-size: clamp(40px, 10vw, 85px);
+            font-weight: 900;
+        }
+
+        #subtext {
+            font-size: clamp(28px, 6vw, 42px);
+            font-weight: 800;
+            margin-top: 15px;
+            opacity: 0.9;
+        }
+
+        #meta {
+            margin-top: 25px;
+            font-size: clamp(12px, 2vw, 16px);
+            opacity: 0.7;
+        }
+
+        /* Animación suave */
+        .fadePulse {
+            animation: pulse 2s infinite ease-in-out;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.03); opacity: 0.85; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+    </style>
 </head>
+
 <body>
-  <h1>Estado del despegue</h1>
-  <div id="box" class="status unknown">Cargando…</div>
-  <div id="meta" class="meta">Última actualización: —</div>
+    <div class="container">
+        <h1>ESTADO DEL DESPEGUE:</h1>
+        <h2>TAKEOFF STATUS:</h2>
 
-<script>
-/* --- CONFIGURACIÓN --- */
-const SHEET_ID = '1ZJ4mVkXZyUVBRXLeiSHI2gSOt7JdcYj92bfKtPujU3g';
-const GID = '0';
-const POLL_INTERVAL_MS = 10000; // 10s
-
-/* --- ELEMENTOS UI --- */
-const box = document.getElementById('box');
-const meta = document.getElementById('meta');
-
-function setStatus(text, cls){
-  box.textContent = text;
-  box.className = 'status ' + cls;
-  meta.textContent = 'Última actualización: ' + new Date().toLocaleString();
-}
-
-/* --- FUNCIONES DE LECTURA --- */
-/* Lee el endpoint gviz y devuelve la cadena de la primera celda (A1) */
-async function fetchFromGviz(id){
-  const url = `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?gid=${GID}&tqx=out:json`;
-  console.debug('fetchFromGviz ->', url);
-  const res = await fetch(url, {cache:"no-store"});
-  if(!res.ok) throw new Error('gviz fetch error ' + res.status);
-  const text = await res.text();
-
-  // 1) Intentar extraer el JSON dentro de google.visualization.Query.setResponse(...)
-  const re = /google\.visualization\.Query\.setResponse\(([\s\S]+?)\);?$/m;
-  let match = text.match(re);
-  let jsonText = null;
-
-  if(match && match[1]){
-    jsonText = match[1].trim();
-    console.debug('gviz: matched setResponse(...)');
-  } else {
-    // 2) Fallback: tomar desde la primera '{' hasta el último '}' equilibrado
-    const start = text.indexOf('{');
-    const last = text.lastIndexOf('}');
-    if(start === -1 || last === -1 || last <= start) {
-      console.debug('gviz: no json found in response');
-      throw new Error('gviz no json');
-    }
-    jsonText = text.slice(start, last + 1);
-    console.debug('gviz: fallback JSON slice used');
-  }
-
-  // 3) Parsear JSON con try/catch para mensajes claros de error
-  let json;
-  try {
-    json = JSON.parse(jsonText);
-  } catch (e) {
-    console.error('gviz: JSON.parse failed', e);
-    // mostrar el fragmento para depuración (recortado)
-    const snippet = jsonText.substring(0, 500);
-    console.error('gviz: snippet:', snippet);
-    throw new Error('gviz json parse error');
-  }
-
-  const rows = (json.table && json.table.rows) ? json.table.rows : [];
-  if(rows.length === 0) throw new Error('gviz no rows');
-  const first = rows[0].c && rows[0].c[0] && rows[0].c[0].v ? String(rows[0].c[0].v).trim() : '';
-  return first;
-}
-
-/* --- LÓGICA UI --- */
-async function fetchEstado(){
-  try {
-    const value = await fetchFromGviz(SHEET_ID);
-    if(!value) throw new Error('vacío');
-    const up = value.toUpperCase();
-    if(up.includes('ABIER')) setStatus('ABIERTO', 'open');
-    else if(up.includes('CERR')) setStatus('CERRADO', 'closed');
-    else setStatus(value, 'unknown');
-  } catch(err){
-    console.error('fetchEstado error', err);
-    setStatus('Error al obtener datos', 'unknown');
-  }
-}
-
-/* iniciar y programar polling */
-fetchEstado();
-setInterval(fetchEstado, POLL_INTERVAL_MS);
-</script>
-</body>
-</html>
+        <div id="estadoBox">
