@@ -20,8 +20,10 @@
   <div id="meta" class="meta">Última actualización: —</div>
 
 <script>
-const PUBLISHED_PUBHTML = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSXHCR_ic2GfcspciaHjEo3w-D_IZS5QXrTdUNL9A2Y-QEKFe-uj16eVRujaueVXlcwPpfppasDtV3f/pubhtml';
-const POLL_INTERVAL_MS = 10000; // 10 s
+/* SHEET_ID del documento ORIGINAL que editas */
+const SHEET_ID = '1ZJ4mVkXZyUVBRXLeiSHI2gSOt7JdcYj92bfKtPujU3g';
+const GID = '0';
+const POLL_INTERVAL_MS = 10000; // 10 segundos
 
 const box = document.getElementById('box');
 const meta = document.getElementById('meta');
@@ -32,30 +34,23 @@ function setStatus(text, cls){
   meta.textContent = 'Última actualización: ' + new Date().toLocaleString();
 }
 
-async function tryPubHtml(pubUrl){
-  const res = await fetch(pubUrl, {cache: "no-store"});
-  if(!res.ok) throw new Error('pubhtml fetch error ' + res.status);
+async function fetchFromGviz(id){
+  const url = `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?gid=${GID}&tqx=out:json`;
+  const res = await fetch(url, {cache:"no-store"});
+  if(!res.ok) throw new Error('gviz fetch error ' + res.status);
   const text = await res.text();
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(text, 'text/html');
-  const td = doc.querySelector('table tbody tr td');
-  if(td && td.textContent && td.textContent.trim().length){
-    return td.textContent.trim();
-  }
-  // fallback a CSV
-  const csvUrl = pubUrl.replace('/pubhtml','/pub?output=csv');
-  const r2 = await fetch(csvUrl, {cache:"no-store"});
-  if(r2.ok){
-    const csv = await r2.text();
-    const firstLine = csv.split(/\r?\n/)[0] || '';
-    return firstLine.replace(/^"|"$/g,'').trim();
-  }
-  throw new Error('no data found in pubhtml/csv');
+  const start = text.indexOf('{');
+  if(start === -1) throw new Error('gviz no json');
+  const json = JSON.parse(text.slice(start));
+  const rows = (json.table && json.table.rows) ? json.table.rows : [];
+  if(rows.length === 0) throw new Error('gviz no rows');
+  const first = rows[0].c && rows[0].c[0] && rows[0].c[0].v ? String(rows[0].c[0].v).trim() : '';
+  return first;
 }
 
 async function fetchEstado(){
   try {
-    const value = await tryPubHtml(PUBLISHED_PUBHTML);
+    const value = await fetchFromGviz(SHEET_ID);
     if(!value) throw new Error('vacío');
     const up = value.toUpperCase();
     if(up.includes('ABIER')) setStatus('ABIERTO', 'open');
