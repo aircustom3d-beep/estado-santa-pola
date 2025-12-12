@@ -4,73 +4,63 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
 <title>Estado del despegue / Takeoff status</title>
+
 <style>
-  /* Reset y layout full-viewport, sin scroll */
+  /* Reset + full viewport */
   html,body{height:100%;margin:0;padding:0;overflow:hidden;background:#0f1720;font-family:Inter,Arial,Helvetica,sans-serif;color:#fff}
   *{box-sizing:border-box}
 
-  /* Viewport que Google Sites mostrará */
+  /* Contenedor visible (iframe / viewport) */
   .viewport{width:100%;height:100vh;display:flex;align-items:center;justify-content:center;padding:env(safe-area-inset,12px);overflow:hidden}
 
-  /* Base con tamaño lógico que se escala para encajar (no provoca scroll) */
-  .base{width:900px;height:620px;display:flex;align-items:center;justify-content:center}
+  /* Tamaño base lógico (se escala para encajar) */
+  .base{width:1050px;height:780px;display:flex;align-items:center;justify-content:center}
 
-  /* Card oscuro que contiene todo */
+  /* Card oscuro */
   .card{
-    width:95%;height:92%;
-    background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
-    border-radius:18px;padding:22px;
-    display:flex;flex-direction:column;gap:12px;align-items:center;justify-content:flex-start;
+    width:95%;height:95%;
+    background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));
+    border-radius:22px;padding:28px;
+    display:flex;flex-direction:column;gap:18px;align-items:center;justify-content:flex-start;
     box-shadow:0 10px 40px rgba(0,0,0,0.55);overflow:hidden;
   }
 
-  /* Encabezado bilingüe (mayúsculas, negrita, con :) */
+  /* Encabezado */
   .title{width:100%;text-align:center;line-height:1}
-  .title .main{font-weight:900;text-transform:uppercase;letter-spacing:1px;font-size:clamp(20px,4.2vw,32px)}
-  .title .sub{font-weight:900;text-transform:uppercase;letter-spacing:1px;opacity:0.9;margin-top:6px;font-size:clamp(12px,2.5vw,18px)}
+  .title .main{font-weight:900;text-transform:uppercase;letter-spacing:1px;font-size:clamp(28px,7vw,42px)}
+  .title .sub{font-weight:900;text-transform:uppercase;letter-spacing:1px;opacity:0.9;margin-top:6px;font-size:clamp(16px,5vw,26px)}
 
-  /* El cuadro de estado ocupa la mayor parte del card */
-  .status-wrap{width:100%;flex-grow:1;display:flex;align-items:center;justify-content:center;padding:6px;box-sizing:border-box}
-  .status-box{
-    width:100%;height:100%;
-    border-radius:14px;padding:16px;
-    display:flex;flex-direction:column;align-items:center;justify-content:center;
-    transition:background .35s ease, box-shadow .35s ease, transform .35s ease;
-    overflow:hidden;
-  }
+  /* Caja de estado ocupa la mayor parte */
+  .status-wrap{width:100%;flex-grow:1;display:flex;align-items:center;justify-content:center;padding:10px}
+  .status-box{width:100%;height:100%;border-radius:20px;padding:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:background .35s ease,transform .35s ease;overflow:hidden}
 
-  /* Texto principal (ABIERTO/CERRADO) */
-  .mainText{font-weight:900;font-size:clamp(44px,10vw,96px);line-height:1;margin:0;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  /* Texto grande */
+  .mainText{font-weight:900;font-size:clamp(60px,16vw,140px);line-height:1;margin:0;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .sideText{font-weight:900;margin-top:18px;font-size:clamp(40px,10vw,90px);opacity:0.95;text-transform:uppercase}
 
-  /* Texto secundario (OPEN/CLOSED) más grande */
-  .sideText{font-weight:900;margin-top:12px;font-size:clamp(28px,6.5vw,56px);opacity:0.98;text-transform:uppercase}
+  /* Meta */
+  .meta{margin-top:12px;font-size:clamp(14px,3.5vw,20px);color:rgba(255,255,255,0.85)}
 
-  /* meta (fecha) */
-  .meta{margin-top:12px;font-size:clamp(12px,2vw,14px);color:rgba(255,255,255,0.85);opacity:0.95}
-
-  /* estados: colores y sombras */
+  /* Estados */
   .state-open{background:linear-gradient(180deg,#29e37d,#1a7a4a);color:#002115;box-shadow:0 12px 40px rgba(10,120,70,0.18)}
   .state-closed{background:linear-gradient(180deg,#d43b3b,#7a0505);color:#fff;box-shadow:0 12px 40px rgba(120,20,20,0.22)}
   .state-unknown{background:linear-gradient(180deg,#9aa0a6,#6f757a);color:#0f1011;box-shadow:0 8px 24px rgba(0,0,0,0.25)}
 
-  /* animaciones sutiles */
-  @keyframes pop {0%{transform:scale(.96);opacity:0}60%{transform:scale(1.02);opacity:1}100%{transform:scale(1)}}
-  .pop { animation: pop 520ms cubic-bezier(.2,.9,.3,1) both }
+  /* Animación */
+  @keyframes pop {0%{transform:scale(.92);opacity:0}70%{transform:scale(1.03);opacity:1}100%{transform:scale(1)}}
+  .pop{animation:pop .6s cubic-bezier(.2,.9,.3,1)}
 
-  @media (prefers-reduced-motion: reduce) {
-    .pop { animation:none!important }
-  }
+  @media (prefers-reduced-motion:reduce){.pop{animation:none!important}}
 
-  /* ajuste para pantallas muy pequeñas */
+  /* Ajustes para pantallas muy pequeñas */
   @media (max-width:420px){
-    .base{width:92%;height:100%}
-    .card{padding:14px}
-    .mainText{font-size: clamp(34px,12vw,64px)}
-    .sideText{font-size: clamp(20px,6.5vw,36px)}
+    .base{width:120%;height:100%}
+    .mainText{font-size:clamp(60px,22vw,160px)}
+    .sideText{font-size:clamp(40px,16vw,120px)}
   }
 
-  /* optional debug overlay hidden by default */
-  #dbg{display:none;position:fixed;left:8px;bottom:8px;background:rgba(0,0,0,0.6);color:#fff;padding:6px 8px;border-radius:6px;font-size:12px;max-width:40%;z-index:9999}
+  /* Debug overlay (oculto por defecto) */
+  #dbg{display:none;position:fixed;left:8px;bottom:8px;background:rgba(0,0,0,0.6);color:#fff;padding:6px 8px;border-radius:6px;font-size:12px;max-width:48%;z-index:9999}
 </style>
 </head>
 <body>
@@ -97,12 +87,11 @@
   <div id="dbg"></div>
 
 <script>
-/* =========== CONFIG =========== */
-/* Pon aquí tu SHEET_ID (la hoja que contiene la celda con "ABIERTO/CERRADO") */
-const SHEET_ID = "1ZJ4mVkXZyUVBRXLeiSHI2gSOt7JdcYj92bfKtPujU3g";
+/* CONFIG */
+const SHEET_ID = "1ZJ4mVkXZyUVBRXLeiSHI2gSOt7JdcYj92bfKtPujU3g"; // reemplaza si necesitas otro ID
 const GID = 0;
-const POLL_MS = 10000;   // consulta cada 10s
-const RELOAD_MS = 15000; // recarga completa cada 15s (fallback)
+const POLL_MS = 10000;
+const RELOAD_MS = 15000;
 
 const baseWrap = document.getElementById('baseWrap');
 const statusBox = document.getElementById('statusBox');
@@ -111,9 +100,9 @@ const sideText = document.getElementById('sideText');
 const meta = document.getElementById('meta');
 const dbg = document.getElementById('dbg');
 
-/* Escala inteligente para Google Sites iframe (evita scroll) */
-const BASE_W = 900, BASE_H = 620;
-function fit() {
+/* Escala inteligente para que encaje en iframe */
+const BASE_W = 1050, BASE_H = 780;
+function fit(){
   const w = Math.max(document.documentElement.clientWidth, window.innerWidth || 0);
   const h = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
   const scale = Math.min(w / BASE_W, h / BASE_H, 1);
@@ -121,11 +110,11 @@ function fit() {
   baseWrap.style.transformOrigin = 'center center';
 }
 window.addEventListener('resize', fit);
-window.addEventListener('orientationchange', ()=>setTimeout(fit,150));
+window.addEventListener('orientationchange', ()=>setTimeout(fit,120));
 fit();
 
-/* Helpers visuales */
-function setVisualState(type, topText, bottomText, timestamp) {
+/* Helpers UI */
+function setVisualState(type, topText, bottomText, timestamp){
   statusBox.classList.remove('state-open','state-closed','state-unknown','pop');
   void statusBox.offsetWidth;
   if(type === 'open') statusBox.classList.add('state-open','pop');
@@ -136,41 +125,31 @@ function setVisualState(type, topText, bottomText, timestamp) {
   sideText.textContent = bottomText || '';
   meta.textContent = 'Última actualización: ' + (timestamp || new Date().toLocaleString());
 }
+function showDbg(msg){ dbg.style.display='block'; dbg.textContent = msg; console.log('DBG:', msg); }
 
-/* DEBUG small helper */
-function showDbg(txt) {
-  dbg.style.display = 'block';
-  dbg.textContent = txt;
-  console.log('DBG:', txt);
-}
-
-/* =========== Lectura: CSV primero, luego GViz =========== */
-async function fetchCsv() {
+/* Lectura CSV rápida */
+async function fetchCsvRaw(){
   const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID}`;
   const r = await fetch(url, {cache:'no-store'});
   if(!r.ok) throw new Error('CSV HTTP ' + r.status);
-  const txt = await r.text();
-  return txt;
+  return await r.text();
+}
+function parseCsvFirstCell(csv){
+  const lines = csv.split(/\r?\n/).filter(Boolean);
+  if(!lines.length) return '';
+  const firstCols = lines[0].split(',');
+  return firstCols[0] ? firstCols[0].trim() : '';
 }
 
-async function parseCsvFirstCell(csvText) {
-  // tomar primera fila con contenido y primera columna
-  const lines = csvText.split(/\r?\n/).filter(Boolean);
-  if(lines.length === 0) return '';
-  const first = lines[0].split(',');
-  return first[0] ? first[0].trim() : '';
-}
-
-async function fetchGvizJson() {
+/* GViz fallback robusto */
+async function fetchGvizJson(){
   const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?gid=${GID}&tqx=out:json`;
   const r = await fetch(url, {cache:'no-store'});
   if(!r.ok) throw new Error('GViz HTTP ' + r.status);
   const txt = await r.text();
-
-  // extraer el JSON balanceando llaves (robusto)
   let m = txt.match(/google\.visualization\.Query\.setResponse\(([\s\S]*?)\);?/);
   let jsonText = null;
-  if(m && m[1]) {
+  if(m && m[1]){
     const frag = m[1];
     const start = frag.indexOf('{');
     if(start === -1) throw new Error('gviz: no json inside setResponse');
@@ -195,63 +174,51 @@ async function fetchGvizJson() {
   return JSON.parse(jsonText);
 }
 
-/* Intentar leer estado (CSV -> GViz fallback) */
-async function readState() {
-  // Intento CSV (es rápido si la hoja está publicada como CSV)
+/* Leer estado: CSV primero, GViz fallback */
+async function readState(){
   try {
-    const csv = await fetchCsv();
-    const cell = await parseCsvFirstCell(csv);
-    if(cell && cell.length>0) {
-      return { val: cell, source: 'csv' };
-    }
-  } catch(e) {
+    const csv = await fetchCsvRaw();
+    const cell = parseCsvFirstCell(csv);
+    if(cell && cell.length) return {val: cell, src:'csv'};
+  } catch(e){
     console.warn('CSV failed:', e && e.message ? e.message : e);
   }
-
-  // Fallback GViz
+  // fallback
   try {
     const j = await fetchGvizJson();
     const rows = (j.table && j.table.rows) ? j.table.rows : [];
     if(rows.length === 0) throw new Error('gviz no rows');
     const first = rows[0].c && rows[0].c[0] && rows[0].c[0].v ? String(rows[0].c[0].v).trim() : '';
-    // intentar timestamp en otra celda (si existe)
+    // optional timestamp if present in row 1 col 0
     let ts = '';
     if(rows[1] && rows[1].c && rows[1].c[0] && rows[1].c[0].v) ts = String(rows[1].c[0].v).trim();
-    return { val: first, ts: ts, source: 'gviz' };
-  } catch(e2) {
-    console.error('GViz failed:', e2 && e2.message ? e2.message : e2);
+    return {val:first, ts:ts, src:'gviz'};
+  } catch(e2){
     throw e2;
   }
 }
 
-/* =========== Bucle principal =========== */
+/* Main update */
 async function updateOnce(){
   try {
-    const result = await readState();
-    const v = (result && result.val) ? result.val : '';
-    const ts = (result && result.ts) ? result.ts : new Date().toLocaleString();
-
+    const res = await readState();
+    const v = res && res.val ? res.val : '';
+    const ts = res && res.ts ? res.ts : new Date().toLocaleString();
     if(!v) throw new Error('empty value');
-
     const up = v.toUpperCase();
-    if(up.includes('ABIER') || up.includes('OPEN')) {
-      setVisualState('open','ABIERTO','OPEN', ts);
-    } else if(up.includes('CERR') || up.includes('CLOSED')) {
-      setVisualState('closed','CERRADO','CLOSED', ts);
-    } else {
-      setVisualState('unknown', v, '', ts);
-    }
-
-    // opcional: mostrar fuente en debug (descomenta si necesitas)
-    // showDbg('Fuente: ' + (result.source||'unknown'));
-  } catch(err) {
-    console.error('updateOnce error', err);
+    if(up.includes('ABIER') || up.includes('OPEN')) setVisualState('open','ABIERTO','OPEN', ts);
+    else if(up.includes('CERR') || up.includes('CLOSED')) setVisualState('closed','CERRADO','CLOSED', ts);
+    else setVisualState('unknown', v, '', ts);
+    //debug source:
+    // showDbg('Fuente: ' + (res.src||'n/a'));
+  } catch(err){
+    console.error('updateOnce err', err);
     setVisualState('unknown','Error al obtener datos','', new Date().toLocaleString());
     showDbg('Error: ' + (err.message || err));
   }
 }
 
-/* iniciar polling + reload fallback */
+/* Start */
 updateOnce();
 setInterval(updateOnce, POLL_MS);
 setInterval(()=>{ try{ window.location.reload(true); } catch(e){ window.location.reload(); } }, RELOAD_MS);
