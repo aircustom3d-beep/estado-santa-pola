@@ -9,67 +9,70 @@
   html, body {
     margin: 0;
     padding: 0;
-    background: transparent; /* SIN FONDO */
+    background: transparent;
     font-family: Inter, Arial, sans-serif;
   }
 
-  /* Contenedor principal — ahora 100% ancho sin marco */
   .state-container{
     width: 100%;
-    padding: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
   }
 
   .title-main{
-    font-size: clamp(20px,6vw,34px);
+    font-size: clamp(26px, 7vw, 40px);
     font-weight: 900;
     text-transform: uppercase;
     text-align: center;
     margin: 10px 0 0;
-    color: #000;
   }
 
   .title-sub{
-    font-size: clamp(14px,4vw,20px);
+    font-size: clamp(18px, 5vw, 26px);
     font-weight: 900;
     text-transform: uppercase;
     text-align: center;
-    margin: 2px 0 15px;
-    color: #222;
+    margin: 4px 0 20px;
   }
 
-  /* Estado ocupa TODO EL ANCHO DEL CONTENEDOR */
+  /* CUADRO PRINCIPAL — AHORA MUCHO MÁS GRANDE */
   .status-box{
     width: 100%;
-    border-radius: 16px;
-    padding: clamp(20px,5vw,40px);
+    min-height: 45vh; /* MÁS ALTO PARA MÓVIL */
+    border-radius: 18px;
+    padding: clamp(30px, 7vw, 60px);
     text-align: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
     transition: .3s;
   }
 
+  /* TEXTO PRINCIPAL ULTRA GRANDE */
   .mainText{
-    font-size: clamp(40px,12vw,80px);
+    font-size: clamp(60px, 16vw, 130px); /* <— AUMENTADO */
     font-weight: 900;
     margin: 0;
+    line-height: 1;
   }
 
+  /* TEXTO SECUNDARIO TAMBIÉN MÁS GRANDE */
   .sideText{
-    font-size: clamp(24px,8vw,48px);
-    font-weight: 900;
-    margin-top: 10px;
+    font-size: clamp(32px, 10vw, 60px);
+    font-weight: 800;
+    margin-top: 20px;
     text-transform: uppercase;
     opacity: .85;
   }
 
   .meta{
-    margin-top: 10px;
-    font-size: clamp(12px,3vw,16px);
+    margin-top: 14px;
+    font-size: clamp(14px, 4vw, 18px);
     color: #333;
   }
 
-  /* Estados */
+  /* Colores de estado */
   .open{
     background: linear-gradient(#29e37d, #1a7a4a);
     color: #002115;
@@ -99,7 +102,6 @@
 </div>
 
 <script>
-/* CONFIG */
 const SHEET_ID = "1ZJ4mVkXZyUVBRXLeiSHI2gSOt7JdcYj92bfKtPujU3g";
 const GID = 0;
 const POLL = 10000;
@@ -113,7 +115,6 @@ const meta = document.getElementById("meta");
 async function readCsv(){
   const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID}`;
   const r = await fetch(url,{cache:"no-store"});
-  if(!r.ok) throw new Error("csv http " + r.status);
   return (await r.text()).split("\n")[0].split(",")[0].trim();
 }
 
@@ -127,11 +128,8 @@ async function readGviz(){
 }
 
 async function getState(){
-  try{
-    return await readCsv();
-  }catch(e){
-    return await readGviz();
-  }
+  try{ return await readCsv(); }
+  catch(e){ return await readGviz(); }
 }
 
 async function update(){
