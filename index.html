@@ -2,226 +2,170 @@
 <html lang="es">
 <head>
 <meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
-<title>Estado del despegue / Takeoff status</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Estado del despegue</title>
 
 <style>
-  /* Reset + full viewport */
-  html,body{height:100%;margin:0;padding:0;overflow:hidden;background:#0f1720;font-family:Inter,Arial,Helvetica,sans-serif;color:#fff}
-  *{box-sizing:border-box}
-
-  /* Contenedor visible (iframe / viewport) */
-  .viewport{width:100%;height:100vh;display:flex;align-items:center;justify-content:center;padding:env(safe-area-inset,12px);overflow:hidden}
-
-  /* Tamaño base lógico (se escala para encajar) */
-  .base{width:1050px;height:780px;display:flex;align-items:center;justify-content:center}
-
-  /* Card oscuro */
-  .card{
-    width:95%;height:95%;
-    background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));
-    border-radius:22px;padding:28px;
-    display:flex;flex-direction:column;gap:18px;align-items:center;justify-content:flex-start;
-    box-shadow:0 10px 40px rgba(0,0,0,0.55);overflow:hidden;
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: transparent; /* SIN FONDO */
+    font-family: Inter, Arial, sans-serif;
   }
 
-  /* Encabezado */
-  .title{width:100%;text-align:center;line-height:1}
-  .title .main{font-weight:900;text-transform:uppercase;letter-spacing:1px;font-size:clamp(28px,7vw,42px)}
-  .title .sub{font-weight:900;text-transform:uppercase;letter-spacing:1px;opacity:0.9;margin-top:6px;font-size:clamp(16px,5vw,26px)}
+  /* Contenedor principal — ahora 100% ancho sin marco */
+  .state-container{
+    width: 100%;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
 
-  /* Caja de estado ocupa la mayor parte */
-  .status-wrap{width:100%;flex-grow:1;display:flex;align-items:center;justify-content:center;padding:10px}
-  .status-box{width:100%;height:100%;border-radius:20px;padding:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:background .35s ease,transform .35s ease;overflow:hidden}
+  .title-main{
+    font-size: clamp(20px,6vw,34px);
+    font-weight: 900;
+    text-transform: uppercase;
+    text-align: center;
+    margin: 10px 0 0;
+    color: #000;
+  }
 
-  /* Texto grande */
-  .mainText{font-weight:900;font-size:clamp(60px,16vw,140px);line-height:1;margin:0;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .sideText{font-weight:900;margin-top:18px;font-size:clamp(40px,10vw,90px);opacity:0.95;text-transform:uppercase}
+  .title-sub{
+    font-size: clamp(14px,4vw,20px);
+    font-weight: 900;
+    text-transform: uppercase;
+    text-align: center;
+    margin: 2px 0 15px;
+    color: #222;
+  }
 
-  /* Meta */
-  .meta{margin-top:12px;font-size:clamp(14px,3.5vw,20px);color:rgba(255,255,255,0.85)}
+  /* Estado ocupa TODO EL ANCHO DEL CONTENEDOR */
+  .status-box{
+    width: 100%;
+    border-radius: 16px;
+    padding: clamp(20px,5vw,40px);
+    text-align: center;
+    transition: .3s;
+  }
+
+  .mainText{
+    font-size: clamp(40px,12vw,80px);
+    font-weight: 900;
+    margin: 0;
+  }
+
+  .sideText{
+    font-size: clamp(24px,8vw,48px);
+    font-weight: 900;
+    margin-top: 10px;
+    text-transform: uppercase;
+    opacity: .85;
+  }
+
+  .meta{
+    margin-top: 10px;
+    font-size: clamp(12px,3vw,16px);
+    color: #333;
+  }
 
   /* Estados */
-  .state-open{background:linear-gradient(180deg,#29e37d,#1a7a4a);color:#002115;box-shadow:0 12px 40px rgba(10,120,70,0.18)}
-  .state-closed{background:linear-gradient(180deg,#d43b3b,#7a0505);color:#fff;box-shadow:0 12px 40px rgba(120,20,20,0.22)}
-  .state-unknown{background:linear-gradient(180deg,#9aa0a6,#6f757a);color:#0f1011;box-shadow:0 8px 24px rgba(0,0,0,0.25)}
-
-  /* Animación */
-  @keyframes pop {0%{transform:scale(.92);opacity:0}70%{transform:scale(1.03);opacity:1}100%{transform:scale(1)}}
-  .pop{animation:pop .6s cubic-bezier(.2,.9,.3,1)}
-
-  @media (prefers-reduced-motion:reduce){.pop{animation:none!important}}
-
-  /* Ajustes para pantallas muy pequeñas */
-  @media (max-width:420px){
-    .base{width:120%;height:100%}
-    .mainText{font-size:clamp(60px,22vw,160px)}
-    .sideText{font-size:clamp(40px,16vw,120px)}
+  .open{
+    background: linear-gradient(#29e37d, #1a7a4a);
+    color: #002115;
   }
-
-  /* Debug overlay (oculto por defecto) */
-  #dbg{display:none;position:fixed;left:8px;bottom:8px;background:rgba(0,0,0,0.6);color:#fff;padding:6px 8px;border-radius:6px;font-size:12px;max-width:48%;z-index:9999}
+  .closed{
+    background: linear-gradient(#d43b3b,#7a0505);
+    color: #fff;
+  }
+  .unknown{
+    background: linear-gradient(#bfc3c7,#8c8f92);
+    color: #000;
+  }
 </style>
 </head>
+
 <body>
-  <div class="viewport">
-    <div id="baseWrap" class="base">
-      <div class="card" role="main" aria-live="polite">
-        <div class="title">
-          <div class="main">ESTADO DEL DESPEGUE:</div>
-          <div class="sub">TAKEOFF STATUS:</div>
-        </div>
+<div class="state-container">
+  <div class="title-main">ESTADO DEL DESPEGUE:</div>
+  <div class="title-sub">TAKEOFF STATUS:</div>
 
-        <div class="status-wrap">
-          <div id="statusBox" class="status-box state-unknown pop" role="status" aria-atomic="true">
-            <div id="mainText" class="mainText">CARGANDO…</div>
-            <div id="sideText" class="sideText"></div>
-          </div>
-        </div>
-
-        <div id="meta" class="meta">Última actualización: —</div>
-      </div>
-    </div>
+  <div id="statusBox" class="status-box unknown">
+      <div id="mainText" class="mainText">CARGANDO…</div>
+      <div id="sideText" class="sideText"></div>
   </div>
 
-  <div id="dbg"></div>
+  <div id="meta" class="meta">Última actualización: —</div>
+</div>
 
 <script>
 /* CONFIG */
-const SHEET_ID = "1ZJ4mVkXZyUVBRXLeiSHI2gSOt7JdcYj92bfKtPujU3g"; // reemplaza si necesitas otro ID
+const SHEET_ID = "1ZJ4mVkXZyUVBRXLeiSHI2gSOt7JdcYj92bfKtPujU3g";
 const GID = 0;
-const POLL_MS = 10000;
-const RELOAD_MS = 15000;
+const POLL = 10000;
+const RELOAD = 15000;
 
-const baseWrap = document.getElementById('baseWrap');
-const statusBox = document.getElementById('statusBox');
-const mainText = document.getElementById('mainText');
-const sideText = document.getElementById('sideText');
-const meta = document.getElementById('meta');
-const dbg = document.getElementById('dbg');
+const box = document.getElementById("statusBox");
+const mainText = document.getElementById("mainText");
+const sideText = document.getElementById("sideText");
+const meta = document.getElementById("meta");
 
-/* Escala inteligente para que encaje en iframe */
-const BASE_W = 1050, BASE_H = 780;
-function fit(){
-  const w = Math.max(document.documentElement.clientWidth, window.innerWidth || 0);
-  const h = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
-  const scale = Math.min(w / BASE_W, h / BASE_H, 1);
-  baseWrap.style.transform = `scale(${scale})`;
-  baseWrap.style.transformOrigin = 'center center';
-}
-window.addEventListener('resize', fit);
-window.addEventListener('orientationchange', ()=>setTimeout(fit,120));
-fit();
-
-/* Helpers UI */
-function setVisualState(type, topText, bottomText, timestamp){
-  statusBox.classList.remove('state-open','state-closed','state-unknown','pop');
-  void statusBox.offsetWidth;
-  if(type === 'open') statusBox.classList.add('state-open','pop');
-  else if(type === 'closed') statusBox.classList.add('state-closed','pop');
-  else statusBox.classList.add('state-unknown','pop');
-
-  mainText.textContent = topText;
-  sideText.textContent = bottomText || '';
-  meta.textContent = 'Última actualización: ' + (timestamp || new Date().toLocaleString());
-}
-function showDbg(msg){ dbg.style.display='block'; dbg.textContent = msg; console.log('DBG:', msg); }
-
-/* Lectura CSV rápida */
-async function fetchCsvRaw(){
+async function readCsv(){
   const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID}`;
-  const r = await fetch(url, {cache:'no-store'});
-  if(!r.ok) throw new Error('CSV HTTP ' + r.status);
-  return await r.text();
-}
-function parseCsvFirstCell(csv){
-  const lines = csv.split(/\r?\n/).filter(Boolean);
-  if(!lines.length) return '';
-  const firstCols = lines[0].split(',');
-  return firstCols[0] ? firstCols[0].trim() : '';
+  const r = await fetch(url,{cache:"no-store"});
+  if(!r.ok) throw new Error("csv http " + r.status);
+  return (await r.text()).split("\n")[0].split(",")[0].trim();
 }
 
-/* GViz fallback robusto */
-async function fetchGvizJson(){
-  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?gid=${GID}&tqx=out:json`;
-  const r = await fetch(url, {cache:'no-store'});
-  if(!r.ok) throw new Error('GViz HTTP ' + r.status);
+async function readGviz(){
+  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&gid=${GID}`;
+  const r = await fetch(url,{cache:"no-store"});
   const txt = await r.text();
-  let m = txt.match(/google\.visualization\.Query\.setResponse\(([\s\S]*?)\);?/);
-  let jsonText = null;
-  if(m && m[1]){
-    const frag = m[1];
-    const start = frag.indexOf('{');
-    if(start === -1) throw new Error('gviz: no json inside setResponse');
-    let depth = 0, end = -1;
-    for(let i=start;i<frag.length;i++){
-      if(frag[i]==='{') depth++;
-      else if(frag[i]==='}') { depth--; if(depth===0){ end=i; break; } }
+  const m = txt.match(/setResponse\(([\s\S]+)\);/);
+  const json = JSON.parse(m[1]);
+  return json.table.rows[0].c[0].v;
+}
+
+async function getState(){
+  try{
+    return await readCsv();
+  }catch(e){
+    return await readGviz();
+  }
+}
+
+async function update(){
+  try{
+    const v = (await getState()).toUpperCase();
+    const ts = new Date().toLocaleString();
+
+    if(v.includes("ABIER") || v.includes("OPEN")){
+      box.className = "status-box open";
+      mainText.textContent = "ABIERTO";
+      sideText.textContent = "OPEN";
+    } else if(v.includes("CERR") || v.includes("CLOSED")){
+      box.className = "status-box closed";
+      mainText.textContent = "CERRADO";
+      sideText.textContent = "CLOSED";
+    } else {
+      box.className = "status-box unknown";
+      mainText.textContent = v;
+      sideText.textContent = "";
     }
-    if(end===-1) throw new Error('gviz: braces not balanced');
-    jsonText = frag.slice(start, end+1);
-  } else {
-    const start = txt.indexOf('{');
-    if(start===-1) throw new Error('gviz: no json found');
-    let depth=0,end=-1;
-    for(let i=start;i<txt.length;i++){
-      if(txt[i]==='{') depth++;
-      else if(txt[i]==='}') { depth--; if(depth===0){ end=i; break; } }
-    }
-    if(end===-1) throw new Error('gviz: braces not balanced global');
-    jsonText = txt.slice(start,end+1);
-  }
-  return JSON.parse(jsonText);
-}
 
-/* Leer estado: CSV primero, GViz fallback */
-async function readState(){
-  try {
-    const csv = await fetchCsvRaw();
-    const cell = parseCsvFirstCell(csv);
-    if(cell && cell.length) return {val: cell, src:'csv'};
-  } catch(e){
-    console.warn('CSV failed:', e && e.message ? e.message : e);
-  }
-  // fallback
-  try {
-    const j = await fetchGvizJson();
-    const rows = (j.table && j.table.rows) ? j.table.rows : [];
-    if(rows.length === 0) throw new Error('gviz no rows');
-    const first = rows[0].c && rows[0].c[0] && rows[0].c[0].v ? String(rows[0].c[0].v).trim() : '';
-    // optional timestamp if present in row 1 col 0
-    let ts = '';
-    if(rows[1] && rows[1].c && rows[1].c[0] && rows[1].c[0].v) ts = String(rows[1].c[0].v).trim();
-    return {val:first, ts:ts, src:'gviz'};
-  } catch(e2){
-    throw e2;
+    meta.textContent = "Última actualización: " + ts;
+
+  }catch(err){
+    box.className = "status-box unknown";
+    mainText.textContent = "ERROR";
+    sideText.textContent = "";
   }
 }
 
-/* Main update */
-async function updateOnce(){
-  try {
-    const res = await readState();
-    const v = res && res.val ? res.val : '';
-    const ts = res && res.ts ? res.ts : new Date().toLocaleString();
-    if(!v) throw new Error('empty value');
-    const up = v.toUpperCase();
-    if(up.includes('ABIER') || up.includes('OPEN')) setVisualState('open','ABIERTO','OPEN', ts);
-    else if(up.includes('CERR') || up.includes('CLOSED')) setVisualState('closed','CERRADO','CLOSED', ts);
-    else setVisualState('unknown', v, '', ts);
-    //debug source:
-    // showDbg('Fuente: ' + (res.src||'n/a'));
-  } catch(err){
-    console.error('updateOnce err', err);
-    setVisualState('unknown','Error al obtener datos','', new Date().toLocaleString());
-    showDbg('Error: ' + (err.message || err));
-  }
-}
-
-/* Start */
-updateOnce();
-setInterval(updateOnce, POLL_MS);
-setInterval(()=>{ try{ window.location.reload(true); } catch(e){ window.location.reload(); } }, RELOAD_MS);
+update();
+setInterval(update,POLL);
+setInterval(()=>location.reload(),RELOAD);
 </script>
+
 </body>
 </html>
