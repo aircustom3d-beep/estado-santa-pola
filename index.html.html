@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Estado Despegue - Actualización automática</title>
+  <style>
+    body { font-family: Arial, Helvetica, sans-serif; padding:20px; max-width:700px; margin:auto; }
+    h1 { font-size:1.6rem; margin-bottom:8px; }
+    .status { font-size:2rem; font-weight:700; padding:16px 20px; border-radius:10px; display:inline-block; }
+    .open { background:#dff0d8; color:#264d18; }
+    .closed { background:#f8d7da; color:#5a1218; }
+    .unknown { background:#f0f0f0; color:#333; }
+    .meta { margin-top:10px; color:#666; font-size:0.95rem; }
+  </style>
+</head>
+<body>
+  <h1>Estado del despegue</h1>
+  <div id="status" class="status unknown">Cargando…</div>
+  <div id="last" class="meta">Última actualización: —</div>
+
+  <script>
+    const SHEET_ID = '_
