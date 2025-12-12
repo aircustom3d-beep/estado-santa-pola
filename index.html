@@ -20,11 +20,8 @@
   <div id="meta" class="meta">Última actualización: —</div>
 
 <script>
-/* Configuración: pubhtml que abriste en el navegador */
-const SHEET_ID = ''; // dejamos vacío porque usaremos pubhtml directamente
-const PUBLISHED_PUBHTML = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSXHCR_ic2GfcspciaHjEo3w-D_IZS5QXrTdUNL9A2Y-QEKFe-uj16eVRujaueVXlcwPpfppasDtV3f/pubhtml?gid=0&single=true';
-const GID = '0';
-const POLL_INTERVAL_MS = 10000; // 10 segundos entre consultas
+const PUBLISHED_PUBHTML = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSXHCR_ic2GfcspciaHjEo3w-D_IZS5QXrTdUNL9A2Y-QEKFe-uj16eVRujaueVXlcwPpfppasDtV3f/pubhtml';
+const POLL_INTERVAL_MS = 10000; // 10 s
 
 const box = document.getElementById('box');
 const meta = document.getElementById('meta');
@@ -41,12 +38,11 @@ async function tryPubHtml(pubUrl){
   const text = await res.text();
   const parser = new DOMParser();
   const doc = parser.parseFromString(text, 'text/html');
-  // buscar primera celda de tabla generada por Google
   const td = doc.querySelector('table tbody tr td');
   if(td && td.textContent && td.textContent.trim().length){
     return td.textContent.trim();
   }
-  // fallback a CSV si no hay tabla detectada
+  // fallback a CSV
   const csvUrl = pubUrl.replace('/pubhtml','/pub?output=csv');
   const r2 = await fetch(csvUrl, {cache:"no-store"});
   if(r2.ok){
@@ -59,9 +55,7 @@ async function tryPubHtml(pubUrl){
 
 async function fetchEstado(){
   try {
-    let value = null;
-    // solo pubhtml (porque abriste y funciona)
-    value = await tryPubHtml(PUBLISHED_PUBHTML);
+    const value = await tryPubHtml(PUBLISHED_PUBHTML);
     if(!value) throw new Error('vacío');
     const up = value.toUpperCase();
     if(up.includes('ABIER')) setStatus('ABIERTO', 'open');
@@ -73,7 +67,6 @@ async function fetchEstado(){
   }
 }
 
-// iniciar y polling
 fetchEstado();
 setInterval(fetchEstado, POLL_INTERVAL_MS);
 </script>
