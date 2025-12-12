@@ -20,4 +20,65 @@
   <div id="last" class="meta">Última actualización: —</div>
 
   <script>
-    const SHEET_ID = '_
+    // SHEET_ID exacto (tu hoja)
+    const SHEET_ID = '1L6Su_LTkbGDTh4ZV-CCfDLdZkKs--E98-_NZnHSNwwg';
+    const GID = '0';
+    const POLL_INTERVAL_MS = 5000; // cada 5s
+
+    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?gid=${GID}&tqx=out:json`;
+
+    async function fetchSheet() {
+      try {
+        const res = await fetch(url, {cache: "no-store"});
+        const text = await res.text();
+        const jsonText = text.replace(/^[^\{]+/, '');
+        const data = JSON.parse(jsonText);
+        const rows = data.table && data.table.rows ? data.table.rows : [];
+        let estado = null;
+
+        if (rows.length > 0 && rows[0].c && rows[0].c[0] && rows[0].c[0].v !== null) {
+          estado = String(rows[0].c[0].v).trim().toUpperCase();
+        }
+
+        updateUI(estado);
+      } catch (err) {
+        console.error('Error al leer el Sheet', err);
+        updateUI(null, true);
+      }
+    }
+
+    function updateUI(estado, error=false) {
+      const el = document.getElementById('status');
+      const last = document.getElementById('last');
+      const now = new Date().toLocaleString();
+
+      if (error) {
+        el.textContent = 'Error al obtener datos';
+        el.className = 'status unknown';
+        last.textContent = 'Última actualización: ' + now;
+        return;
+      }
+
+      if (!estado) {
+        el.textContent = 'Estado desconocido';
+        el.className = 'status unknown';
+      } else if (estado.includes('ABIER')) {
+        el.textContent = 'ABIERTO';
+        el.className = 'status open';
+      } else if (estado.includes('CERR')) {
+        el.textContent = 'CERRADO';
+        el.className = 'status closed';
+      } else {
+        el.textContent = estado;
+        el.className = 'status unknown';
+      }
+
+      last.textContent = 'Última actualización: ' + now;
+    }
+
+    // inicia
+    fetchSheet();
+    setInterval(fetchSheet, POLL_INTERVAL_MS);
+  </script>
+</body>
+</html>
