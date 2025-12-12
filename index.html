@@ -20,11 +20,12 @@
   <div id="meta" class="meta">Última actualización: —</div>
 
 <script>
-/* SHEET_ID (tu documento) */
+/* --- CONFIGURACIÓN --- */
 const SHEET_ID = '1ZJ4mVkXZyUVBRXLeiSHI2gSOt7JdcYj92bfKtPujU3g';
 const GID = '0';
 const POLL_INTERVAL_MS = 10000; // 10s
 
+/* --- ELEMENTOS UI --- */
 const box = document.getElementById('box');
 const meta = document.getElementById('meta');
 
@@ -34,27 +35,46 @@ function setStatus(text, cls){
   meta.textContent = 'Última actualización: ' + new Date().toLocaleString();
 }
 
+/* --- FUNCIONES DE LECTURA --- */
+/* Lee el endpoint gviz y devuelve la cadena de la primera celda (A1) */
 async function fetchFromGviz(id){
   const url = `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?gid=${GID}&tqx=out:json`;
+  console.debug('fetchFromGviz ->', url);
   const res = await fetch(url, {cache:"no-store"});
   if(!res.ok) throw new Error('gviz fetch error ' + res.status);
   const text = await res.text();
 
-  // Extraer con regex el JSON que está dentro de google.visualization.Query.setResponse(...)
-  const m = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]+)\);?/);
-  if(!m || !m[1]){
-    // si no coincide, intentar buscar primer { ... } equilibrado
+  // 1) Intentar extraer el JSON dentro de google.visualization.Query.setResponse(...)
+  const re = /google\.visualization\.Query\.setResponse\(([\s\S]+?)\);?$/m;
+  let match = text.match(re);
+  let jsonText = null;
+
+  if(match && match[1]){
+    jsonText = match[1].trim();
+    console.debug('gviz: matched setResponse(...)');
+  } else {
+    // 2) Fallback: tomar desde la primera '{' hasta el último '}' equilibrado
     const start = text.indexOf('{');
-    if(start === -1) throw new Error('gviz no json');
-    // buscar el último '}' posible
     const last = text.lastIndexOf('}');
-    if(last === -1) throw new Error('gviz no json end');
-    const maybe = text.slice(start, last+1);
-    return JSON.parse(maybe).table.rows[0].c[0].v;
+    if(start === -1 || last === -1 || last <= start) {
+      console.debug('gviz: no json found in response');
+      throw new Error('gviz no json');
+    }
+    jsonText = text.slice(start, last + 1);
+    console.debug('gviz: fallback JSON slice used');
   }
 
-  const jsonText = m[1].trim();
-  const json = JSON.parse(jsonText);
+  // 3) Parsear JSON con try/catch para mensajes claros de error
+  let json;
+  try {
+    json = JSON.parse(jsonText);
+  } catch (e) {
+    console.error('gviz: JSON.parse failed', e);
+    // mostrar el fragmento para depuración (recortado)
+    const snippet = jsonText.substring(0, 500);
+    console.error('gviz: snippet:', snippet);
+    throw new Error('gviz json parse error');
+  }
 
   const rows = (json.table && json.table.rows) ? json.table.rows : [];
   if(rows.length === 0) throw new Error('gviz no rows');
@@ -62,7 +82,7 @@ async function fetchFromGviz(id){
   return first;
 }
 
-
+/* --- LÓGICA UI --- */
 async function fetchEstado(){
   try {
     const value = await fetchFromGviz(SHEET_ID);
@@ -77,9 +97,9 @@ async function fetchEstado(){
   }
 }
 
+/* iniciar y programar polling */
 fetchEstado();
 setInterval(fetchEstado, POLL_INTERVAL_MS);
 </script>
 </body>
 </html>
-
