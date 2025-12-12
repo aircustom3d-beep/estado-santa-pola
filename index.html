@@ -3,279 +3,246 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>Estado del despegue / Takeoff status</title>
+  <title>Estado del despegue — Autoajustable</title>
 
   <style>
-    /* Reset básico y layout de pantalla completa */
+    /* ===== Reset y layout ===== */
     html,body{
       height:100%;
       margin:0;
       padding:0;
       box-sizing:border-box;
-      -webkit-font-smoothing:antialiased;
-      -moz-osx-font-smoothing:grayscale;
-      background:#0f1720; /* fondo oscuro */
+      background:#0f1720;
       color:#fff;
       font-family:Inter,system-ui,Arial,Helvetica,sans-serif;
-      overflow:hidden; /* ¡sin scroll! */
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      overflow:hidden;
     }
-    *,*::before,*::after{box-sizing:inherit}
+    *,*::before,*::after{ box-sizing:inherit }
 
-    /* Contenedor que ocupa toda la ventana */
-    .viewport {
-      height:100vh;            /* ocupa toda la pantalla */
+    /* Contenedor visible dentro del iframe */
+    .viewport{
+      width:100%;
+      height:100vh;
       display:flex;
       align-items:center;
       justify-content:center;
-      padding:env(safe-area-inset-top,18px) env(safe-area-inset-right,12px) env(safe-area-inset-bottom,18px) env(safe-area-inset-left,12px);
+      padding:env(safe-area-inset-top,12px) env(safe-area-inset-right,10px)
+              env(safe-area-inset-bottom,12px) env(safe-area-inset-left,10px);
+      overflow:hidden;
     }
 
-    /* Card centrada y que se ajusta al espacio disponible */
-    .card {
-      width:100%;
-      height:100%;
-      max-width:980px;
-      max-height:100%;
-      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));
-      border-radius:16px;
-      padding:clamp(12px,3.5vw,22px);
+    /* Área base que se escalará automáticamente */
+    .base{
+      width:980px;
+      height:720px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+
+    /* Tarjeta principal */
+    .card{
+      width:94%;
+      height:86%;
+      background:linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.02));
+      border-radius:18px;
+      padding:24px;
       display:flex;
       flex-direction:column;
       align-items:center;
       justify-content:center;
       gap:12px;
-      box-shadow: 0 10px 40px rgba(2,6,23,0.6);
+      box-shadow:0 10px 40px rgba(2,6,23,0.6);
       border:1px solid rgba(255,255,255,0.03);
-      overflow:hidden; /* evitar scroll interno */
+      overflow:hidden;
     }
 
-    /* Header bilingüe pequeño, ocupando mínimo */
-    .title {
-      width:100%;
+    /* ===== Encabezado bilingüe ===== */
+    .title{
       display:flex;
-      justify-content:center;
-      align-items:baseline;
-      gap:10px;
-      margin:0;
-      padding:0;
-      line-height:1;
-      user-select:none;
-    }
-    .title .main {
-      font-weight:700;
-      font-size:clamp(14px,3.8vw,18px);
-      color:#e6eef6;
-      letter-spacing:0.8px;
+      flex-direction:column;
+      align-items:center;
       text-align:center;
+      margin-bottom:8px;
+      gap:4px;
     }
-    .title .sub {
-      font-weight:600;
-      font-size:clamp(11px,2.8vw,13px);
+    .title .main,
+    .title .sub{
+      font-weight:900;         /* NEGRITA */
+      text-transform:uppercase; /* MAYÚSCULAS */
+      letter-spacing:1px;
+    }
+    .title .main{
+      font-size:28px;
+      color:#e6eef6;
+    }
+    .title .sub{
+      font-size:18px;
       color:#a8b6c6;
-      opacity:0.95;
     }
 
-    /* Badge: ocupa el hueco central y se escala para que nunca desborde */
-    .badge {
+    /* ===== Badge de estado ===== */
+    .badge{
       width:100%;
-      /* máxima altura: restar espacio para header y meta: usa calc con vh */
-      max-height: calc(100vh - 140px); /* ajustable */
-      min-height: 64px;
+      height:58%;
+      border-radius:14px;
       display:flex;
       flex-direction:column;
       align-items:center;
       justify-content:center;
-      border-radius:12px;
-      padding: clamp(10px,3.5vw,28px);
+      padding:12px;
       text-align:center;
       font-weight:900;
-      color:#fff;
       letter-spacing:1px;
-      /* tamaño responsivo: usa vh para que escale con la ventana */
-      font-size: clamp(20px, 6.5vh, 64px);
-      line-height:1;
-      transition: transform 420ms cubic-bezier(.2,.9,.3,1), box-shadow 420ms, background 420ms, color 420ms;
-      will-change: transform, box-shadow, background;
+      color:#fff;
+      transition:transform 420ms cubic-bezier(.2,.9,.3,1),
+                 box-shadow 420ms, background 420ms;
+      will-change:transform,box-shadow,background;
       overflow:hidden;
     }
-
-    .badge .mainText { display:block; width:100%; white-space:nowrap; text-overflow:ellipsis; overflow:hidden; }
-    .badge .sub { margin-top:8px; font-weight:700; font-size:clamp(10px,2.6vw,16px); opacity:0.95; }
-
-    /* Meta line */
-    .meta { margin-top:6px; color:#cbd5e1; font-size:clamp(11px,2.6vw,13px); text-align:center; opacity:0.95; }
-
-    /* Estados (colores adaptados para contraste) */
-    .open { background: linear-gradient(180deg,#06d6a0,#028a5f); color:#001a0f; box-shadow: 0 12px 40px rgba(3,139,99,0.18); }
-    .closed { background: linear-gradient(180deg,#ff5b5b,#9b0e0e); color:#2b0000; box-shadow: 0 12px 40px rgba(155,14,14,0.18); }
-    .unknown{ background: linear-gradient(180deg,#9aa0a6,#6f757a); color:#0f1011; box-shadow: 0 8px 28px rgba(0,0,0,0.28); }
-
-    /* Animaciones para visibilidad */
-    @keyframes pop {
-      0% { transform: scale(0.94); opacity:0.0 }
-      60% { transform: scale(1.03); opacity:1 }
-      100% { transform: scale(1); opacity:1 }
+    .badge .mainText{
+      font-size:64px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
     }
-    .pop { animation: pop 520ms cubic-bezier(.2,.9,.3,1) both; }
-
-    @keyframes pulse {
-      0% { transform: scale(1) }
-      50% { transform: scale(1.02) }
-      100% { transform: scale(1) }
-    }
-    .pulse { animation: pulse 880ms ease; }
-
-    /* Evitar animaciones si user pide reduced motion */
-    @media (prefers-reduced-motion: reduce){
-      .pop, .pulse { animation: none !important; }
-      .badge { transition: none !important; }
+    .badge .sub{
+      margin-top:10px;
+      font-size:18px;
+      font-weight:800;
     }
 
-    /* Ajuste extra para pantallas muy estrechas (apilar) */
-    @media (max-width:420px){
-      .card { padding:12px; border-radius:10px; }
-      .badge { font-size: clamp(18px, 8.5vh, 52px); max-height: calc(100vh - 120px); }
+    .meta{
+      margin-top:6px;
+      color:#cbd5e1;
+      font-size:14px;
     }
 
-    /* If embedded inside an iframe from Sites, ensure the outer iframe uses 100vh.
-       In Google Sites: set the embed height to 100vh (or a high px value like 800px)
-       — instrucciones abajo. */
+    /* Colores del estado */
+    .open{ background:linear-gradient(180deg,#06d6a0,#028a5f); color:#002017; }
+    .closed{ background:linear-gradient(180deg,#ff5b5b,#9b0e0e); color:#2b0000; }
+    .unknown{ background:linear-gradient(180deg,#9aa0a6,#6f757a); color:#0f1011; }
+
+    /* Animaciones */
+    @keyframes pop{
+      0%{ transform:scale(0.92); opacity:0 }
+      60%{ transform:scale(1.03); opacity:1 }
+      100%{ transform:scale(1) }
+    }
+    @keyframes pulse{
+      0%{ transform:scale(1) }
+      50%{ transform:scale(1.02) }
+      100%{ transform:scale(1) }
+    }
+    .pop{ animation:pop 520ms cubic-bezier(.2,.9,.3,1) both }
+    .pulse{ animation:pulse 880ms ease }
+
+    @media(prefers-reduced-motion:reduce){
+      .pop,.pulse{ animation:none!important }
+      .badge{ transition:none!important }
+    }
+
   </style>
 </head>
+
 <body>
   <div class="viewport">
-    <div class="card" role="main" aria-live="polite">
-      <div class="title" aria-hidden="true">
-        <div class="main">ESTADO DEL DESPEGUE</div>
-        <div class="sub">/ TAKEOFF STATUS</div>
-      </div>
+    <div id="baseWrap" class="base">
+      <div class="card">
 
-      <div id="badge" class="badge unknown pop" role="status" aria-atomic="true" aria-live="polite">
-        <span class="mainText" id="mainText">Cargando…</span>
-        <span class="sub" id="subText"></span>
-      </div>
+        <!-- ===== Encabezado ===== -->
+        <div class="title">
+          <div class="main"><strong>ESTADO DEL DESPEGUE:</strong></div>
+          <div class="sub"><strong>TAKEOFF STATUS:</strong></div>
+        </div>
 
-      <div id="meta" class="meta">Última actualización: —</div>
+        <!-- ===== Estado ===== -->
+        <div id="badge" class="badge unknown pop">
+          <span id="mainText" class="mainText">CARGANDO…</span>
+          <span id="subText" class="sub"></span>
+        </div>
+
+        <div id="meta" class="meta">Última actualización: —</div>
+
+      </div>
     </div>
   </div>
 
 <script>
-/* ---------- Configuración ---------- */
+/* ============ CONFIG ============ */
 const SHEET_ID = "1ZJ4mVkXZyUVBRXLeiSHI2gSOt7JdcYj92bfKtPujU3g";
 const GID = 0;
-const POLL_INTERVAL_MS = 10000; // consulta suave (no recarga)
-const FULL_RELOAD_MS = 15000;   // recarga completa cada 15s (si quieres quitarla, elimina este setInterval)
+const POLL_INTERVAL = 10000;
+const FULL_RELOAD = 15000;
 
-const badge = document.getElementById('badge');
-const mainText = document.getElementById('mainText');
-const subText = document.getElementById('subText');
-const meta = document.getElementById('meta');
+/* Referencias DOM */
+const baseWrap = document.getElementById("baseWrap");
+const badge = document.getElementById("badge");
+const mainText = document.getElementById("mainText");
+const subText = document.getElementById("subText");
+const meta = document.getElementById("meta");
 
-/* Aplica estado y animaciones (asegura que el texto nunca desborde) */
-function applyState(text){
-  const up = (text||'').toUpperCase().trim();
-  // reset classes then add to trigger animations
-  badge.classList.remove('open','closed','unknown','pop','pulse');
-  void badge.offsetWidth;
+const BASE_WIDTH = 980;
+const BASE_HEIGHT = 720;
 
-  if(up.includes('ABIER') || up.includes('OPEN')){
-    badge.classList.add('open','pop','pulse');
-    mainText.textContent = 'ABIERTO';
-    subText.textContent = 'OPEN';
-  } else if(up.includes('CERR') || up.includes('CLOSED')){
-    badge.classList.add('closed','pop','pulse');
-    mainText.textContent = 'CERRADO';
-    subText.textContent = 'CLOSED';
-  } else {
-    badge.classList.add('unknown','pop');
-    mainText.textContent = text || 'DESCONOCIDO';
-    subText.textContent = '';
-  }
+/* ============ AJUSTE AUTOMÁTICO A MÓVIL / IFRAME ============ */
+function fit(){
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  const scale = Math.min(w / BASE_WIDTH, h / BASE_HEIGHT, 1);
 
-  // forzar que el texto no haga wrap que cause scroll: trim y si muy largo, cortar
-  const maxLen = 18; // ajustar: número de caracteres visibles sin overflow
-  if(mainText.textContent.length > maxLen){
-    mainText.textContent = mainText.textContent.slice(0, maxLen-1) + '…';
-  }
-
-  meta.textContent = 'Última actualización: ' + new Date().toLocaleString();
+  baseWrap.style.transform = `scale(${scale})`;
+  baseWrap.style.transformOrigin = "center center";
+  baseWrap.style.width = BASE_WIDTH + "px";
+  baseWrap.style.height = BASE_HEIGHT + "px";
 }
 
-/* ---------- GViz fetch robusto ---------- */
-async function fetchFromGviz(id){
-  const url = `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?gid=${GID}&tqx=out:json`;
-  const res = await fetch(url, {cache:"no-store"});
-  if(!res.ok) throw new Error('gviz fetch error ' + res.status);
+window.addEventListener("resize", fit);
+window.addEventListener("orientationchange", ()=>setTimeout(fit,200));
+fit();
+
+/* ============ LECTURA GVIZ ============ */
+async function fetchGviz(){
+  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?gid=${GID}&tqx=out:json`;
+  const res = await fetch(url, { cache:"no-store" });
   const text = await res.text();
 
-  // buscar setResponse(...) y extraer JSON balanceado
-  let m = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*?)\);?/);
-  let jsonText = null;
+  const match = text.match(/setResponse\(([\s\S]*)\);?/);
+  if(!match) throw new Error("No JSON GViz");
 
-  if(m && m[1]){
-    const frag = m[1];
-    const start = frag.indexOf('{');
-    if(start === -1) throw new Error('gviz no json inside setResponse');
-    let depth = 0, end = -1;
-    for(let i = start; i < frag.length; i++){
-      if(frag[i] === '{') depth++;
-      else if(frag[i] === '}'){
-        depth--;
-        if(depth === 0){ end = i; break; }
-      }
-    }
-    if(end === -1) throw new Error('gviz json not balanced in setResponse');
-    jsonText = frag.slice(start, end+1);
+  const raw = match[1];
+  const jsonStart = raw.indexOf("{");
+  let depth=0, end=-1;
+
+  for(let i=jsonStart;i<raw.length;i++){
+    if(raw[i]=="{") depth++;
+    if(raw[i]=="}") depth--;
+    if(depth===0){ end=i; break; }
+  }
+
+  const json = JSON.parse(raw.slice(jsonStart, end+1));
+  const row = json.table.rows[0];
+  return row?.c?.[0]?.v || "";
+}
+
+/* ============ ACTUALIZAR UI ============ */
+function updateUI(state){
+  const up = state.toUpperCase();
+
+  badge.classList.remove("open","closed","unknown","pop","pulse");
+  void badge.offsetWidth;
+
+  if(up.includes("ABIER") || up.includes("OPEN")){
+    badge.classList.add("open","pop","pulse");
+    mainText.textContent="ABIERTO";
+    subText.textContent="OPEN";
+
+  } else if(up.includes("CERR") || up.includes("CLOSED")){
+    badge.classList.add("closed","pop","pulse");
+    mainText.textContent="CERRADO";
+    subText.textContent="CLOSED";
+
   } else {
-    // fallback: global balanceo
-    const start = text.indexOf('{');
-    if(start === -1) throw new Error('gviz no json global');
-    let depth = 0, end = -1;
-    for(let i = start; i < text.length; i++){
-      if(text[i] === '{') depth++;
-      else if(text[i] === '}'){
-        depth--;
-        if(depth === 0){ end = i; break; }
-      }
-    }
-    if(end === -1) throw new Error('gviz json not balanced global');
-    jsonText = text.slice(start, end+1);
-  }
-
-  let json;
-  try { json = JSON.parse(jsonText); } catch(e) { console.error('gviz parse failed', e); throw new Error('gviz parse error'); }
-
-  const rows = (json.table && json.table.rows) ? json.table.rows : [];
-  if(rows.length === 0) throw new Error('gviz no rows');
-  const first = rows[0].c && rows[0].c[0] && rows[0].c[0].v ? String(rows[0].c[0].v).trim() : '';
-  return first;
-}
-
-/* ---------- Loop principal ---------- */
-async function updateOnce(){
-  try {
-    const value = await fetchFromGviz(SHEET_ID);
-    if(!value) throw new Error('empty');
-    applyState(value);
-  } catch(err){
-    console.error('updateOnce error', err);
-    badge.classList.remove('open','closed');
-    badge.classList.add('unknown');
-    mainText.textContent = 'Error al obtener datos';
-    subText.textContent = '';
-    meta.textContent = 'Última actualización: ' + new Date().toLocaleString();
-  }
-}
-
-/* iniciar */
-updateOnce();
-/* polling interno para suavizar entre recargas */
-setInterval(updateOnce, POLL_INTERVAL_MS);
-
-/* recarga completa cada 15s (fallback) */
-setInterval(() => {
-  try { window.location.reload(true); } catch(e) { window.location.reload(); }
-}, FULL_RELOAD_MS);
-</script>
-</body>
-</html>
+    badge.classList.add("unkn
