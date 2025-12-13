@@ -5,9 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Estado del despegue</title>
 
-<!-- PapaParse: lector CSV profesional -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-
 <style>
     body {
         margin: 0;
@@ -41,12 +38,18 @@
     .status-box {
         width: 100%;
         min-height: 35vh;
-        border-radius: 16px;
+        border-radius: 26px; /* bordes redondeados */
         padding: clamp(20px, 5vw, 40px);
         display: flex;
         flex-direction: column;
         justify-content: center;
         margin: 20px auto;
+        box-sizing: border-box;
+        transition: transform .4s ease-in-out;
+    }
+
+    /* Latido solo cuando se añade esta clase */
+    .heartbeat {
         animation: heartbeat 3s infinite ease-in-out;
     }
 
@@ -82,63 +85,66 @@
 
 <div class="container">
     <div id="status-box" class="status-box">
-        <div id="estado" class="estado">CARGANDO...</div>
+        <div id="estado" class="estado">CARGANDO…</div>
         <div id="estado-en" class="estado-en"></div>
     </div>
     <div id="meta" class="meta">Última actualización: —</div>
 </div>
 
 <script>
-const URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSXHCR_ic2GfcspciaHjEo3w-D_IZ5SQXrTdUNL9A2Y-QEKFe-uj16eVRujaueVXlcwPpfppasDtV3f/pub?output=csv";
+/* GVIZ URL – SIEMPRE FUNCIONA */
+const GVIZ_URL =
+"https://docs.google.com/spreadsheets/d/1ZJ4mVkXZyUVBRXLeiSHI2gSOt7JdcYj92bfKtPujU3g/gviz/tq?tqx=out:json&gid=0";
 
-function cargarEstado() {
-    Papa.parse(URL + "&t=" + Date.now(), {
-        download: true,
-        header: false,
-        complete: function(res) {
-            try {
-                const row = res.data[1]; // Segunda fila
+async function cargarEstado() {
+    try {
+        const resp = await fetch(GVIZ_URL + "&t=" + Date.now());
+        const text = await resp.text();
 
-                if (!row) throw "Fila vacía";
+        /* Extraemos el JSON de dentro de la respuesta GVIZ */
+        const jsonStr = text.substring(text.indexOf("{"), text.lastIndexOf("}") + 1);
+        const data = JSON.parse(jsonStr);
 
-                const estado = (row[0] || "").toUpperCase();
-                const fecha = row[3] || "";
+        /* La celda A2 es tu estado */
+        const estadoValor = data.table.rows[1].c[0].v.toUpperCase();
+        const fechaValor  = data.table.rows[1].c[3].v || "";
 
-                const box = document.getElementById("status-box");
-                const txt = document.getElementById("estado");
-                const txtEN = document.getElementById("estado-en");
+        const box = document.getElementById("status-box");
+        const txt = document.getElementById("estado");
+        const txtEN = document.getElementById("estado-en");
 
-                if (estado.includes("ABIERTO")) {
-                    box.style.background = "linear-gradient(180deg,#34D399,#059669)";
-                    txt.innerText = "ABIERTO";
-                    txtEN.innerText = "OPEN";
-                }
-                else if (estado.includes("CERRADO")) {
-                    box.style.background = "linear-gradient(180deg,#B91C1C,#7F1D1D)";
-                    txt.innerText = "CERRADO";
-                    txtEN.innerText = "CLOSED";
-                }
-                else {
-                    box.style.background = "#6B7280";
-                    txt.innerText = "INDEFINIDO";
-                    txtEN.innerText = "UNDEFINED";
-                }
+        /* Quitamos latido antes de volver a aplicar */
+        box.classList.remove("heartbeat");
 
-                document.getElementById("meta").innerText =
-                    "Última actualización: " + fecha;
-
-            } catch (err) {
-                document.getElementById("estado").innerText = "ERROR";
-                document.getElementById("estado-en").innerText = "LOAD ERROR";
-            }
+        if (estadoValor.includes("ABIERTO")) {
+            box.style.background = "linear-gradient(180deg,#34D399,#059669)";
+            txt.textContent = "ABIERTO";
+            txtEN.textContent = "OPEN";
+            box.classList.add("heartbeat");
         }
-    });
+        else if (estadoValor.includes("CERRADO")) {
+            box.style.background = "linear-gradient(180deg,#B91C1C,#7F1D1D)";
+            txt.textContent = "CERRADO";
+            txtEN.textContent = "CLOSED";
+            box.classList.add("heartbeat");
+        }
+        else {
+            box.style.background = "#6B7280";
+            txt.textContent = estadoValor;
+            txtEN.textContent = "";
+        }
+
+        document.getElementById("meta").textContent =
+            "Última actualización: " + fechaValor;
+
+    } catch (e) {
+        document.getElementById("estado").textContent = "ERROR";
+        document.getElementById("estado-en").textContent = "LOAD ERROR";
+    }
 }
 
-// Primera carga
+/* Cargar ahora y cada 15s */
 cargarEstado();
-
-// Recargar cada 15 s
 setInterval(cargarEstado, 15000);
 </script>
 
