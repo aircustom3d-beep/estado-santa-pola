@@ -1,47 +1,47 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Estado del despegue</title>
-
 <style>
-    body {
+    html, body {
         margin: 0;
         padding: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden; /* elimina scroll */
+    }
+
+    body {
         background: #111;
         font-family: Arial, Helvetica, sans-serif;
         color: white;
-        overflow: hidden;
         display: flex;
         flex-direction: column;
         align-items: center;
         text-align: center;
+        box-sizing: border-box;
     }
 
     h1 {
-        margin-top: 20px;
-        font-size: 7vw;
+        margin: 1vh 0 0 0;
+        font-size: 6vw;
         font-weight: 900;
     }
 
     h2 {
-        margin-top: -10px;
+        margin: 0;
         font-size: 4vw;
         font-weight: 700;
     }
 
     .box {
         width: 92%;
-        max-width: 1200px;
-        height: 40vh;
+        height: 32vh; /* reducido para evitar overflow */
+        max-height: 38vh;
         background: linear-gradient(#c7ccd1, #777c82);
         border-radius: 25px;
         display: flex;
         justify-content: center;
         align-items: center;
-        margin-top: 20px;
+        margin-top: 2vh;
         transition: transform 0.3s ease-in-out;
+        overflow: hidden; /* asegura que nada se desborde */
     }
 
     .pulse {
@@ -58,11 +58,12 @@
         font-size: 10vw;
         font-weight: 900;
         color: black;
+        line-height: 1;
     }
 
     #fecha {
-        margin-top: 20px;
-        font-size: 4vw;
+        margin-top: 2vh;
+        font-size: 3.5vw;
         font-weight: 300;
     }
 
@@ -73,62 +74,3 @@
         h2 { font-size: 2rem; }
     }
 </style>
-</head>
-
-<body>
-
-<h1>ESTADO DEL DESPEGUE:</h1>
-<h2>TAKEOFF STATUS:</h2>
-
-<div id="box" class="box">
-    <div id="estado">CARGANDO...</div>
-</div>
-
-<div id="fecha">Última actualización: —</div>
-
-<script>
-async function getData() {
-    try {
-        const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSXHCR_ic2GfcspciaHjEo3w-D_IZS5QXrTdUNL9A2Y-QEKFe-uj16eVRujaueVXlcwPpfppasDtV3f/pubhtml?gid=1147167472&single=true";
-
-        const response = await fetch(url);
-        const text = await response.text();
-
-        // Extraer A1 y A2 del HTML publicado
-        const matchA1 = text.match(/<td[^>]*>(CERRADO|ABIERTO)<\/td>/i);
-        const matchA2 = text.match(/Actualizado[^<]+/i);
-
-        let estado = matchA1 ? matchA1[1].toUpperCase() : "ERROR";
-        let fecha = matchA2 ? matchA2[0] : "No se pudo leer la hora";
-
-        document.getElementById("estado").textContent = estado;
-        document.getElementById("fecha").textContent = fecha;
-
-        // Añadir animación solo cuando muestra estado real
-        const box = document.getElementById("box");
-        if (estado === "ABIERTO" || estado === "CERRADO") {
-            box.classList.add("pulse");
-        } else {
-            box.classList.remove("pulse");
-        }
-
-        // Cambiar color según estado
-        if (estado === "ABIERTO") {
-            box.style.background = "linear-gradient(#4df5a8, #1b8f54)";
-        } else if (estado === "CERRADO") {
-            box.style.background = "linear-gradient(#b00000, #5a0000)";
-        } else {
-            box.style.background = "linear-gradient(#c7ccd1, #777c82)";
-        }
-
-    } catch (error) {
-        document.getElementById("estado").textContent = "ERROR";
-        document.getElementById("fecha").textContent = "No se pudo leer el estado";
-    }
-}
-
-getData();
-setInterval(getData, 15000);
-</script>
-</body>
-</html>
