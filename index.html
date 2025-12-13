@@ -1,150 +1,140 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Estado del Despegue</title>
 
 <style>
-    body {
-        margin: 0;
-        padding: 0;
-        background: #111;
-        font-family: Arial, Helvetica, sans-serif;
-        color: white;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: flex-start;
-        height: 100vh;
-        overflow: hidden;
-        text-align: center;
-    }
+body {
+    margin: 0;
+    padding: 0;
+    background: #111;
+    font-family: Arial, Helvetica, sans-serif;
+    color: white;
+    text-align: center;
+}
 
-    h1 {
-        font-size: clamp(28px, 5vw, 50px);
-        font-weight: 900;
-        margin-top: 25px;
-        margin-bottom: 5px;
-    }
+h1 {
+    font-size: clamp(26px, 5vw, 50px);
+    font-weight: 900;
+    margin-top: 25px;
+}
 
-    h2 {
-        font-size: clamp(16px, 3vw, 22px);
-        font-weight: 700;
-        margin: 0;
-        opacity: 0.85;
-    }
+h2 {
+    font-size: clamp(16px, 3vw, 24px);
+    font-weight: 700;
+    margin-top: -8px;
+    opacity: 0.9;
+}
 
-    #box {
-        width: 90%;
-        max-width: 1100px;
-        background: linear-gradient(to bottom, #d0d5d9, #7c8288);
-        padding: 30px 10px;
-        border-radius: 25px;
-        margin-top: 30px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        min-height: 180px;
-        transition: transform 0.3s ease-in-out;
-    }
+#box{
+    width: 92%;
+    max-width: 1000px;
+    margin: 30px auto;
+    padding: 40px 15px;
+    font-size: clamp(40px, 10vw, 100px);
+    font-weight: 900;
+    border-radius: 24px;
+    background: linear-gradient(180deg,#c3c7cc,#8a9097);
+    color: black;
+    transition: transform 0.3s ease;
+}
 
-    /* ⭐ Animación de latido SOLO mientras carga */
-    .loading {
-        animation: latido 1.8s infinite ease-in-out;
-    }
+/* LATIDO SUAVE */
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.04); }
+    100% { transform: scale(1); }
+}
 
-    @keyframes latido {
-        0% { transform: scale(1); }
-        50% { transform: scale(1.05); }
-        100% { transform: scale(1); }
-    }
+.loading {
+    animation: pulse 1.6s infinite ease-in-out;
+}
 
-    #estado {
-        font-size: clamp(40px, 8vw, 90px);
-        font-weight: 800;
-        color: black;
-    }
-
-    #meta {
-        margin-top: 20px;
-        font-size: clamp(12px, 2vw, 18px);
-        opacity: 0.85;
-    }
+#meta {
+    margin-top: 14px;
+    font-size: clamp(14px, 2.5vw, 20px);
+    opacity: 0.8;
+}
 </style>
-</head>
 
+</head>
 <body>
 
-    <h1>ESTADO DEL DESPEGUE:</h1>
-    <h2>TAKEOFF STATUS:</h2>
+<h1>ESTADO DEL DESPEGUE:</h1>
+<h2>TAKEOFF STATUS:</h2>
 
-    <div id="box" class="loading">
-        <span id="estado">CARGANDO...</span>
-    </div>
-
-    <div id="meta">Última actualización: —</div>
+<div id="box" class="loading">CARGANDO…</div>
+<div id="meta">Última actualización: —</div>
 
 <script>
-/* ⭐ URL GViz definitiva con GID correcto */
-const GVIZ_URL =
-"https://docs.google.com/spreadsheets/d/1ZJ4mVkXZyUVBRXLeiSHI2gSOt7JdcYj92bfKtPujU3g/gviz/tq?tqx=out:json&gid=1147167472";
+/* URL GViz con el GID correcto */
+const GVIZ_URL = 
+ "https://docs.google.com/spreadsheets/d/1ZJ4mVkXZyUVBRXLeiSHI2gSOt7JdcYj92bfKtPujU3g/gviz/tq?tqx=out:json&gid=1147167472";
 
-/* 🟦 Mapea colores según estado */
-const colores = {
-    "ABIERTO": "#2ecc71",
-    "OPEN": "#2ecc71",
-
-    "CERRADO": "#c0392b",
-    "CLOSED": "#c0392b"
-};
-
-/* ========= FUNCIÓN PRINCIPAL ========== */
-async function fetchEstado() {
+async function fetchEstado(){
     try {
-        const res = await fetch(GVIZ_URL);
-        const text = await res.text();
+        // Evitar caché
+        const res = await fetch(GVIZ_URL + "&_=" + Date.now());
+        const txt = await res.text();
 
-        // El JSON GViz viene encerrado en basura → se limpia
-        const json = JSON.parse(text.substring(text.indexOf("{"), text.lastIndexOf("}") + 1));
+        // Extraer JSON válido
+        const json = JSON.parse(
+            txt.substring(txt.indexOf("{"), txt.lastIndexOf("}") + 1)
+        );
 
         const rows = json.table.rows;
 
-        let estadoBruto = rows[0].c[0].v;
-        let fecha = rows[1].c[0].v;
+        const estadoRaw = (rows[0].c[0] && rows[0].c[0].v) ? rows[0].c[0].v : "";
+        const fechaRaw  = (rows[1].c[0] && rows[1].c[0].v) ? rows[1].c[0].v : "";
 
-        // Extrae versión ES e EN
-        let partes = estadoBruto.split("/");
-        let estadoES = partes[0].trim();
-        let estadoEN = partes[1] ? partes[1].trim() : estadoES;
+        const box = document.getElementById("box");
+        const meta = document.getElementById("meta");
 
-        // Determina color
-        let color = colores[estadoES.toUpperCase()] || "#999";
+        // Texto
+        const text = estadoRaw.toString().trim().toUpperCase();
 
-        // Actualiza la UI
-        document.getElementById("estado").textContent = estadoES;
-        document.getElementById("meta").textContent = fecha;
-
-        let box = document.getElementById("box");
-        box.style.background = color;
-        box.style.color = "white";
-
-        // Quita animación de latido porque ya cargó
+        // Quitar animación de carga
         box.classList.remove("loading");
 
-    } catch (err) {
-        console.error(err);
-        document.getElementById("estado").textContent = "ERROR";
-        document.getElementById("box").style.background = "#555";
-        document.getElementById("meta").textContent = "No se pudo leer el estado";
+        if(text.includes("ABIERTO")){
+            box.style.background = "linear-gradient(180deg,#2dd27a,#10723f)";
+            box.style.color = "#fff";
+            box.textContent = "ABIERTO";
+            meta.textContent = fechaRaw;
+        }
+        else if(text.includes("CERRADO")){
+            box.style.background = "linear-gradient(180deg,#d53838,#7a0b0b)";
+            box.style.color = "#fff";
+            box.textContent = "CERRADO";
+            meta.textContent = fechaRaw;
+        }
+        else {
+            box.style.background = "linear-gradient(180deg,#888,#555)";
+            box.style.color = "#fff";
+            box.textContent = text || "SIN ESTADO";
+            meta.textContent = fechaRaw;
+        }
+
+    } catch(err) {
+        // Mostrar error
+        const box = document.getElementById("box");
+        const meta = document.getElementById("meta");
+        box.classList.remove("loading");
+        box.style.background = "linear-gradient(180deg,#444,#222)";
+        box.style.color = "#fff";
+        box.textContent = "ERROR";
+        meta.textContent = "No se pudo leer el estado";
+        console.error("fetchEstado error:", err);
     }
 }
 
-/* Recarga automática cada 15 segundos */
-setInterval(fetchEstado, 15000);
-
-/* Primera carga */
+// Primera carga
 fetchEstado();
+
+// Repetir cada 15s
+setInterval(fetchEstado, 15000);
 </script>
 
 </body>
