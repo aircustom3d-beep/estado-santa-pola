@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Estado del Despegue</title>
 
 <style>
@@ -11,35 +11,33 @@
         margin: 0;
         padding: 0;
         text-align: center;
-        background: #f5f5f5;
+        background: #121212;
+        color: white;
     }
 
     h1 {
-        margin-top: 20px;
-        font-size: 2rem;
-        font-weight: 800;
+        font-size: 2.4rem;
+        margin-top: 25px;
+        font-weight: 900;
     }
     h2 {
         margin-top: -10px;
-        font-size: 1rem;
+        font-size: 1.2rem;
         font-weight: 700;
-        color: #444;
+        opacity: 0.8;
     }
 
-    /* CONTENEDOR PRINCIPAL */
     #box {
-        width: 95%;
-        max-width: 900px;
-        margin: 20px auto;
-        padding: 40px 20px;
-        border-radius: 25px;
-        background: linear-gradient(#d0d3d6, #92979b);
-        font-size: 3rem;
-        font-weight: 900;
+        width: 92%;
+        max-width: 1100px;
+        margin: 25px auto;
+        padding: 50px 20px;
+        border-radius: 30px;
+        background: linear-gradient(#c5c9cc, #84898d);
         transition: transform 0.3s ease;
     }
 
-    /* ANIMACIÓN LATIDO SOLO EN CARGA */
+    /* LATIDO DURANTE CARGA */
     .pulse {
         animation: pulseAnim 1.6s infinite;
     }
@@ -49,26 +47,30 @@
         100% { transform: scale(1); }
     }
 
-    /* COLORES SEGÚN ESTADO */
-    .open   { background: linear-gradient(#32e67f, #0d8c41) !important; color: white; }
-    .closed { background: linear-gradient(#a60000, #5a0000) !important; color: white; }
+    /* COLORES */
+    .open {
+        background: linear-gradient(#2be67a, #0a7a35) !important;
+        color: white;
+    }
+    .closed {
+        background: linear-gradient(#a00000, #5a0000) !important;
+        color: white;
+    }
 
-    /* TEXTO ESTADO GRANDE */
     #estadoTexto {
-        font-size: 3rem;
+        font-size: 3.6rem;
         font-weight: 900;
     }
     #estadoIngles {
-        font-size: 1.3rem;
-        margin-top: 5px;
+        font-size: 1.6rem;
         font-weight: 700;
+        margin-top: 10px;
     }
 
-    /* FECHA */
     #meta {
-        margin-top: 10px;
+        margin-top: 15px;
         font-size: 1rem;
-        color: #333;
+        opacity: 0.8;
     }
 </style>
 </head>
@@ -86,59 +88,52 @@
 <div id="meta">Última actualización: —</div>
 
 <script>
-const SHEET_URL =
-"https://docs.google.com/spreadsheets/d/e/2PACX-1vSXHCR_ic2GfcspciaHjEo3w-D_IZS5QXrTdUNL9A2Y-QEKFe-uj16eVRujaueVXlcwPpfppasDtV3f/pub?gid=1147167472&single=true&output=csv";
+const GVIZ_URL =
+"https://docs.google.com/spreadsheets/d/1ZJ4mVkXZyUVBRXLeiSHI2gSOt7JdcYj92bfKtPujU3g/gviz/tq?tqx=out:json&sheet=ESTADO";
 
 async function cargarEstado() {
     try {
-        const response = await fetch(SHEET_URL + "&_=" + Date.now());
-        const data = await response.text();
-        const filas = data.trim().split("\n");
+        const res = await fetch(GVIZ_URL + "&_=" + Date.now());
+        const txt = await res.text();
 
-        const estado = filas[0].trim().toUpperCase();
-        const fecha = filas[1] ? filas[1].trim() : "";
+        // Quitar basura "/*O_o*/"
+        const json = JSON.parse(txt.substring(txt.indexOf("{"), txt.lastIndexOf("}") + 1));
+
+        const rows = json.table.rows;
+        const estado = rows[0].c[0].v.trim().toUpperCase();
+        const fecha = rows[1].c[0].v.trim();
 
         const box = document.getElementById("box");
-        const estadoTexto = document.getElementById("estadoTexto");
-        const estadoIng = document.getElementById("estadoIngles");
+        const texto = document.getElementById("estadoTexto");
+        const ing = document.getElementById("estadoIngles");
         const meta = document.getElementById("meta");
 
-        // QUITAR animación porque ya no está cargando
         box.classList.remove("pulse");
 
         if (estado.includes("ABIERTO")) {
             box.className = "open";
-            estadoTexto.textContent = "ABIERTO";
-            estadoIng.textContent = "OPEN";
-        } 
-        else if (estado.includes("CERRADO")) {
+            texto.textContent = "ABIERTO";
+            ing.textContent = "OPEN";
+        } else if (estado.includes("CERRADO")) {
             box.className = "closed";
-            estadoTexto.textContent = "CERRADO";
-            estadoIng.textContent = "CLOSED";
-        } 
-        else {
+            texto.textContent = "CERRADO";
+            ing.textContent = "CLOSED";
+        } else {
             box.className = "pulse";
-            estadoTexto.textContent = "ERROR";
-            estadoIng.textContent = "";
+            texto.textContent = "ERROR";
+            ing.textContent = "";
         }
 
-        meta.textContent = fecha ? fecha : "Última actualización: —";
+        meta.textContent = fecha;
 
-    } catch (e) {
-        console.error("Error cargando datos:", e);
-
-        const box = document.getElementById("box");
-        box.className = "pulse";
+    } catch (err) {
+        console.error(err);
         document.getElementById("estadoTexto").textContent = "ERROR";
-        document.getElementById("estadoIngles").textContent = "";
-        document.getElementById("meta").textContent = "No se pudo obtener la información";
+        document.getElementById("estadoIngles").textContent = "No se pudo leer el estado";
     }
 }
 
-// Primera carga
 cargarEstado();
-
-// Autoactualización cada 15 segundos
 setInterval(cargarEstado, 15000);
 </script>
 
