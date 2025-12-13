@@ -1,141 +1,134 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Estado del Despegue</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Estado del despegue</title>
 
 <style>
-body {
-    margin: 0;
-    padding: 0;
-    background: #111;
-    font-family: Arial, Helvetica, sans-serif;
-    color: white;
-    text-align: center;
-}
+    body {
+        margin: 0;
+        padding: 0;
+        background: #111;
+        font-family: Arial, Helvetica, sans-serif;
+        color: white;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
 
-h1 {
-    font-size: clamp(26px, 5vw, 50px);
-    font-weight: 900;
-    margin-top: 25px;
-}
+    h1 {
+        margin-top: 20px;
+        font-size: 7vw;
+        font-weight: 900;
+    }
 
-h2 {
-    font-size: clamp(16px, 3vw, 24px);
-    font-weight: 700;
-    margin-top: -8px;
-    opacity: 0.9;
-}
+    h2 {
+        margin-top: -10px;
+        font-size: 4vw;
+        font-weight: 700;
+    }
 
-#box{
-    width: 92%;
-    max-width: 1000px;
-    margin: 30px auto;
-    padding: 40px 15px;
-    font-size: clamp(40px, 10vw, 100px);
-    font-weight: 900;
-    border-radius: 24px;
-    background: linear-gradient(180deg,#c3c7cc,#8a9097);
-    color: black;
-    transition: transform 0.3s ease;
-}
+    .box {
+        width: 92%;
+        max-width: 1200px;
+        height: 40vh;
+        background: linear-gradient(#c7ccd1, #777c82);
+        border-radius: 25px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-top: 20px;
+        transition: transform 0.3s ease-in-out;
+    }
 
-/* LATIDO SUAVE */
-@keyframes pulse {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.04); }
-    100% { transform: scale(1); }
-}
+    .pulse {
+        animation: pulse 2.2s infinite;
+    }
 
-.loading {
-    animation: pulse 1.6s infinite ease-in-out;
-}
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.03); }
+        100% { transform: scale(1); }
+    }
 
-#meta {
-    margin-top: 14px;
-    font-size: clamp(14px, 2.5vw, 20px);
-    opacity: 0.8;
-}
+    #estado {
+        font-size: 10vw;
+        font-weight: 900;
+        color: black;
+    }
+
+    #fecha {
+        margin-top: 20px;
+        font-size: 4vw;
+        font-weight: 300;
+    }
+
+    @media (min-width:900px) {
+        #estado { font-size: 4rem; }
+        #fecha { font-size: 1.6rem; }
+        h1 { font-size: 4rem; }
+        h2 { font-size: 2rem; }
+    }
 </style>
-
 </head>
+
 <body>
 
 <h1>ESTADO DEL DESPEGUE:</h1>
 <h2>TAKEOFF STATUS:</h2>
 
-<div id="box" class="loading">CARGANDO…</div>
-<div id="meta">Última actualización: —</div>
+<div id="box" class="box">
+    <div id="estado">CARGANDO...</div>
+</div>
+
+<div id="fecha">Última actualización: —</div>
 
 <script>
-/* URL GViz con el GID correcto */
-const GVIZ_URL = 
- "https://docs.google.com/spreadsheets/d/1ZJ4mVkXZyUVBRXLeiSHI2gSOt7JdcYj92bfKtPujU3g/gviz/tq?tqx=out:json&gid=1147167472";
-
-async function fetchEstado(){
+async function getData() {
     try {
-        // Evitar caché
-        const res = await fetch(GVIZ_URL + "&_=" + Date.now());
-        const txt = await res.text();
+        const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSXHCR_ic2GfcspciaHjEo3w-D_IZS5QXrTdUNL9A2Y-QEKFe-uj16eVRujaueVXlcwPpfppasDtV3f/pubhtml?gid=1147167472&single=true";
 
-        // Extraer JSON válido
-        const json = JSON.parse(
-            txt.substring(txt.indexOf("{"), txt.lastIndexOf("}") + 1)
-        );
+        const response = await fetch(url);
+        const text = await response.text();
 
-        const rows = json.table.rows;
+        // Extraer A1 y A2 del HTML publicado
+        const matchA1 = text.match(/<td[^>]*>(CERRADO|ABIERTO)<\/td>/i);
+        const matchA2 = text.match(/Actualizado[^<]+/i);
 
-        const estadoRaw = (rows[0].c[0] && rows[0].c[0].v) ? rows[0].c[0].v : "";
-        const fechaRaw  = (rows[1].c[0] && rows[1].c[0].v) ? rows[1].c[0].v : "";
+        let estado = matchA1 ? matchA1[1].toUpperCase() : "ERROR";
+        let fecha = matchA2 ? matchA2[0] : "No se pudo leer la hora";
 
+        document.getElementById("estado").textContent = estado;
+        document.getElementById("fecha").textContent = fecha;
+
+        // Añadir animación solo cuando muestra estado real
         const box = document.getElementById("box");
-        const meta = document.getElementById("meta");
-
-        // Texto
-        const text = estadoRaw.toString().trim().toUpperCase();
-
-        // Quitar animación de carga
-        box.classList.remove("loading");
-
-        if(text.includes("ABIERTO")){
-            box.style.background = "linear-gradient(180deg,#2dd27a,#10723f)";
-            box.style.color = "#fff";
-            box.textContent = "ABIERTO";
-            meta.textContent = fechaRaw;
-        }
-        else if(text.includes("CERRADO")){
-            box.style.background = "linear-gradient(180deg,#d53838,#7a0b0b)";
-            box.style.color = "#fff";
-            box.textContent = "CERRADO";
-            meta.textContent = fechaRaw;
-        }
-        else {
-            box.style.background = "linear-gradient(180deg,#888,#555)";
-            box.style.color = "#fff";
-            box.textContent = text || "SIN ESTADO";
-            meta.textContent = fechaRaw;
+        if (estado === "ABIERTO" || estado === "CERRADO") {
+            box.classList.add("pulse");
+        } else {
+            box.classList.remove("pulse");
         }
 
-    } catch(err) {
-        // Mostrar error
-        const box = document.getElementById("box");
-        const meta = document.getElementById("meta");
-        box.classList.remove("loading");
-        box.style.background = "linear-gradient(180deg,#444,#222)";
-        box.style.color = "#fff";
-        box.textContent = "ERROR";
-        meta.textContent = "No se pudo leer el estado";
-        console.error("fetchEstado error:", err);
+        // Cambiar color según estado
+        if (estado === "ABIERTO") {
+            box.style.background = "linear-gradient(#4df5a8, #1b8f54)";
+        } else if (estado === "CERRADO") {
+            box.style.background = "linear-gradient(#b00000, #5a0000)";
+        } else {
+            box.style.background = "linear-gradient(#c7ccd1, #777c82)";
+        }
+
+    } catch (error) {
+        document.getElementById("estado").textContent = "ERROR";
+        document.getElementById("fecha").textContent = "No se pudo leer el estado";
     }
 }
 
-// Primera carga
-fetchEstado();
-
-// Repetir cada 15s
-setInterval(fetchEstado, 15000);
+getData();
+setInterval(getData, 15000);
 </script>
-
 </body>
 </html>
