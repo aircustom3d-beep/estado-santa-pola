@@ -1,168 +1,145 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Estado del despegue</title>
 
+<!-- PapaParse: lector CSV profesional -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+
 <style>
-  html, body {
-    margin: 0;
-    padding: 0;
-    background: transparent;
-    font-family: Inter, Arial, sans-serif;
-  }
+    body {
+        margin: 0;
+        padding: 0;
+        font-family: Arial, Helvetica, sans-serif;
+        background: #111827;
+        color: white;
+        text-align: center;
+    }
 
-  .state-container{
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
+    h1 {
+        font-size: clamp(22px, 4vw, 40px);
+        margin-top: 25px;
+        font-weight: 900;
+    }
 
-  .title-main{
-    font-size: clamp(26px, 7vw, 40px);
-    font-weight: 900;
-    text-transform: uppercase;
-    text-align: center;
-    margin: 10px 0 0;
-  }
+    h2 {
+        font-size: clamp(16px, 2.5vw, 26px);
+        margin-top: -10px;
+        font-weight: 700;
+        opacity: 0.9;
+    }
 
-  .title-sub{
-    font-size: clamp(18px, 5vw, 26px);
-    font-weight: 900;
-    text-transform: uppercase;
-    text-align: center;
-    margin: 4px 0 20px;
-  }
+    .container {
+        width: 100%;
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 10px;
+    }
 
-  /* CUADRO PRINCIPAL — AHORA MUCHO MÁS GRANDE */
-  .status-box{
-    width: 100%;
-    min-height: 45vh; /* MÁS ALTO PARA MÓVIL */
-    border-radius: 18px;
-    padding: clamp(30px, 7vw, 60px);
-    text-align: center;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    transition: .3s;
-  }
+    .status-box {
+        width: 100%;
+        min-height: 35vh;
+        border-radius: 16px;
+        padding: clamp(20px, 5vw, 40px);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        margin: 20px auto;
+        animation: heartbeat 3s infinite ease-in-out;
+    }
 
-  /* TEXTO PRINCIPAL ULTRA GRANDE */
-  .mainText{
-    font-size: clamp(60px, 16vw, 130px); /* <— AUMENTADO */
-    font-weight: 900;
-    margin: 0;
-    line-height: 1;
-  }
+    @keyframes heartbeat {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.03); }
+        100% { transform: scale(1); }
+    }
 
-  /* TEXTO SECUNDARIO TAMBIÉN MÁS GRANDE */
-  .sideText{
-    font-size: clamp(32px, 10vw, 60px);
-    font-weight: 800;
-    margin-top: 20px;
-    text-transform: uppercase;
-    opacity: .85;
-  }
+    .estado {
+        font-size: clamp(40px,10vw,90px);
+        font-weight: 900;
+        margin-bottom: 10px;
+    }
 
-  .meta{
-    margin-top: 14px;
-    font-size: clamp(14px, 4vw, 18px);
-    color: #333;
-  }
+    .estado-en {
+        font-size: clamp(22px,5vw,40px);
+        font-weight: 700;
+    }
 
-  /* Colores de estado */
-  .open{
-    background: linear-gradient(#29e37d, #1a7a4a);
-    color: #002115;
-  }
-  .closed{
-    background: linear-gradient(#d43b3b,#7a0505);
-    color: #fff;
-  }
-  .unknown{
-    background: linear-gradient(#bfc3c7,#8c8f92);
-    color: #000;
-  }
+    .meta {
+        margin-top: 20px;
+        font-size: clamp(14px,2vw,18px);
+        opacity: 0.8;
+    }
 </style>
 </head>
 
 <body>
-<div class="state-container">
-  <div class="title-main">ESTADO DEL DESPEGUE:</div>
-  <div class="title-sub">TAKEOFF STATUS:</div>
 
-  <div id="statusBox" class="status-box unknown">
-      <div id="mainText" class="mainText">CARGANDO…</div>
-      <div id="sideText" class="sideText"></div>
-  </div>
+<h1>ESTADO DEL DESPEGUE:</h1>
+<h2>TAKEOFF STATUS:</h2>
 
-  <div id="meta" class="meta">Última actualización: —</div>
+<div class="container">
+    <div id="status-box" class="status-box">
+        <div id="estado" class="estado">CARGANDO...</div>
+        <div id="estado-en" class="estado-en"></div>
+    </div>
+    <div id="meta" class="meta">Última actualización: —</div>
 </div>
 
 <script>
-const SHEET_ID = "1ZJ4mVkXZyUVBRXLeiSHI2gSOt7JdcYj92bfKtPujU3g";
-const GID = 0;
-const POLL = 10000;
-const RELOAD = 15000;
+const URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSXHCR_ic2GfcspciaHjEo3w-D_IZ5SQXrTdUNL9A2Y-QEKFe-uj16eVRujaueVXlcwPpfppasDtV3f/pub?output=csv";
 
-const box = document.getElementById("statusBox");
-const mainText = document.getElementById("mainText");
-const sideText = document.getElementById("sideText");
-const meta = document.getElementById("meta");
+function cargarEstado() {
+    Papa.parse(URL + "&t=" + Date.now(), {
+        download: true,
+        header: false,
+        complete: function(res) {
+            try {
+                const row = res.data[1]; // Segunda fila
 
-async function readCsv(){
-  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID}`;
-  const r = await fetch(url,{cache:"no-store"});
-  return (await r.text()).split("\n")[0].split(",")[0].trim();
+                if (!row) throw "Fila vacía";
+
+                const estado = (row[0] || "").toUpperCase();
+                const fecha = row[3] || "";
+
+                const box = document.getElementById("status-box");
+                const txt = document.getElementById("estado");
+                const txtEN = document.getElementById("estado-en");
+
+                if (estado.includes("ABIERTO")) {
+                    box.style.background = "linear-gradient(180deg,#34D399,#059669)";
+                    txt.innerText = "ABIERTO";
+                    txtEN.innerText = "OPEN";
+                }
+                else if (estado.includes("CERRADO")) {
+                    box.style.background = "linear-gradient(180deg,#B91C1C,#7F1D1D)";
+                    txt.innerText = "CERRADO";
+                    txtEN.innerText = "CLOSED";
+                }
+                else {
+                    box.style.background = "#6B7280";
+                    txt.innerText = "INDEFINIDO";
+                    txtEN.innerText = "UNDEFINED";
+                }
+
+                document.getElementById("meta").innerText =
+                    "Última actualización: " + fecha;
+
+            } catch (err) {
+                document.getElementById("estado").innerText = "ERROR";
+                document.getElementById("estado-en").innerText = "LOAD ERROR";
+            }
+        }
+    });
 }
 
-async function readGviz(){
-  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&gid=${GID}`;
-  const r = await fetch(url,{cache:"no-store"});
-  const txt = await r.text();
-  const m = txt.match(/setResponse\(([\s\S]+)\);/);
-  const json = JSON.parse(m[1]);
-  return json.table.rows[0].c[0].v;
-}
+// Primera carga
+cargarEstado();
 
-async function getState(){
-  try{ return await readCsv(); }
-  catch(e){ return await readGviz(); }
-}
-
-async function update(){
-  try{
-    const v = (await getState()).toUpperCase();
-    const ts = new Date().toLocaleString();
-
-    if(v.includes("ABIER") || v.includes("OPEN")){
-      box.className = "status-box open";
-      mainText.textContent = "ABIERTO";
-      sideText.textContent = "OPEN";
-    } else if(v.includes("CERR") || v.includes("CLOSED")){
-      box.className = "status-box closed";
-      mainText.textContent = "CERRADO";
-      sideText.textContent = "CLOSED";
-    } else {
-      box.className = "status-box unknown";
-      mainText.textContent = v;
-      sideText.textContent = "";
-    }
-
-    meta.textContent = "Última actualización: " + ts;
-
-  }catch(err){
-    box.className = "status-box unknown";
-    mainText.textContent = "ERROR";
-    sideText.textContent = "";
-  }
-}
-
-update();
-setInterval(update,POLL);
-setInterval(()=>location.reload(),RELOAD);
+// Recargar cada 15 s
+setInterval(cargarEstado, 15000);
 </script>
 
 </body>
