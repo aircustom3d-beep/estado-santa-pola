@@ -16,6 +16,7 @@ html, body {
     font-family: Arial, Helvetica, sans-serif;
 }
 
+/* CONTENEDOR GENERAL */
 #app {
     width: 100vw;
     height: 100vh;
@@ -26,6 +27,7 @@ html, body {
     gap: 2vh;
 }
 
+/* ENCABEZADOS */
 h1 {
     font-size: clamp(20px, 6vw, 40px);
     font-weight: 900;
@@ -42,18 +44,22 @@ h2 {
     color: #444;
 }
 
+/* RECUADRO QUE SE AJUSTA AL TEXTO */
 #estado {
     width: 90vw;
     max-width: 900px;
     padding: 4vh 4vw;
     border-radius: 28px;
+
     display: inline-flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
+
     box-sizing: border-box;
 }
 
+/* TEXTO */
 #texto-es {
     font-size: clamp(22px, 7vw, 50px);
     font-weight: 900;
@@ -69,20 +75,38 @@ h2 {
     text-align: center;
 }
 
+/* BOTÓN AVISO */
+#btnAudio {
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: 700;
+    border-radius: 22px;
+    border: none;
+    background: #0077ff;
+    color: white;
+}
+
+/* PIE */
 #meta {
     font-size: clamp(12px, 3.5vw, 18px);
     color: #555;
     text-align: center;
 }
 
-.pulse-open { animation: pulseOpen 2.5s infinite; }
-.pulse-closed { animation: pulseClosed 1.6s infinite; }
+/* ANIMACIONES */
+.pulse-open {
+    animation: pulseOpen 2.5s infinite;
+}
+.pulse-closed {
+    animation: pulseClosed 1.6s infinite;
+}
 
 @keyframes pulseOpen {
     0% { transform: scale(1); }
     50% { transform: scale(1.03); }
     100% { transform: scale(1); }
 }
+
 @keyframes pulseClosed {
     0% { transform: scale(1); }
     50% { transform: scale(1.06); }
@@ -92,7 +116,7 @@ h2 {
 </head>
 
 <body>
-<div id="app" onclick="habilitarAudio()">
+<div id="app">
 
     <h1>ESTADO DEL DESPEGUE:</h1>
     <h2>TAKEOFF STATUS:</h2>
@@ -102,20 +126,33 @@ h2 {
         <div id="texto-en"></div>
     </div>
 
-    <div id="meta">Toca la pantalla para activar sonido</div>
+    <button id="btnAudio" onclick="activarAudio()">🔔 AVÍSAME / NOTIFY ME</button>
+
+    <div id="meta">—</div>
 
 </div>
 
 <script>
-const sonidoAbierto = new Audio("https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg");
-const sonidoCerrado = new Audio("https://actions.google.com/sounds/v1/cartoon/descending_whistle_1.ogg");
-
-let audioHabilitado = false;
+let audioActivo = false;
 let estadoAnterior = null;
 
-function habilitarAudio() {
-    audioHabilitado = true;
-    document.getElementById("meta").innerText = "Sonido activado";
+// Audios
+const audioAbierto = new Audio("https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg");
+const audioCerrado = new Audio("https://actions.google.com/sounds/v1/cartoon/descending_whistle_1.ogg");
+
+function activarAudio() {
+    audioActivo = true;
+
+    // Desbloqueo de audio (obligatorio en móviles)
+    audioAbierto.volume = 0;
+    audioAbierto.play().then(() => {
+        audioAbierto.pause();
+        audioAbierto.currentTime = 0;
+        audioAbierto.volume = 1;
+    });
+
+    document.getElementById("btnAudio").innerText =
+        "🔔 AVISO ACTIVADO / ALERT ENABLED";
 }
 
 async function cargarEstado() {
@@ -125,7 +162,9 @@ async function cargarEstado() {
     try {
         const r = await fetch(url);
         const t = await r.text();
-        const j = JSON.parse(t.substring(t.indexOf("{"), t.lastIndexOf("}") + 1));
+        const j = JSON.parse(
+            t.substring(t.indexOf("{"), t.lastIndexOf("}") + 1)
+        );
 
         const estadoRaw = j.table.rows[0].c[0].v.toLowerCase();
         const actualizado = j.table.rows[1].c[0].v;
@@ -153,10 +192,10 @@ async function cargarEstado() {
             estadoActual = "CERRADO";
         }
 
-        // 🔊 REPRODUCIR SONIDO SOLO SI CAMBIA EL ESTADO
-        if (audioHabilitado && estadoAnterior && estadoAnterior !== estadoActual) {
-            if (estadoActual === "ABIERTO") sonidoAbierto.play();
-            if (estadoActual === "CERRADO") sonidoCerrado.play();
+        // 🔊 Sonido solo si cambia el estado
+        if (audioActivo && estadoAnterior && estadoAnterior !== estadoActual) {
+            if (estadoActual === "ABIERTO") audioAbierto.play();
+            if (estadoActual === "CERRADO") audioCerrado.play();
         }
 
         estadoAnterior = estadoActual;
@@ -166,7 +205,8 @@ async function cargarEstado() {
         document.getElementById("estado").style.background = "#999";
         document.getElementById("texto-es").innerText = "ERROR";
         document.getElementById("texto-en").innerText = "";
-        document.getElementById("meta").innerText = "No se pudo leer el estado";
+        document.getElementById("meta").innerText =
+            "No se pudo leer el estado";
     }
 }
 
@@ -176,5 +216,3 @@ setInterval(cargarEstado, 15000);
 
 </body>
 </html>
-
-
