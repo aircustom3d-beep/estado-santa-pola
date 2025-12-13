@@ -2,15 +2,15 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
 <style>
     html, body {
         margin: 0;
         padding: 0;
+        width: 100vw;
+        height: 100vh;       /* ← evita scroll */
         overflow: hidden !important;
-        width: 100%;
-        height: 100%;
         background: #111;
         font-family: Arial, sans-serif;
     }
@@ -18,36 +18,45 @@
     #container {
         width: 100%;
         height: 100%;
-        overflow: hidden !important;
+        overflow: hidden;   /* ← evita scroll interno */
         display: flex;
         flex-direction: column;
-        justify-content: flex-start;
+        justify-content: space-evenly; /* reparte el espacio sin desbordar */
         align-items: center;
     }
 
     h1, h2 {
         color: white;
         text-align: center;
-        margin: 10px 0;
         font-weight: 900;
+        margin: 0;
+        padding: 0;
+        font-size: 5vw;
+    }
+
+    /* Ajuste especial para móviles */
+    @media (max-width: 600px) {
+        h1 { font-size: 7vw; }
+        h2 { font-size: 5vw; }
     }
 
     #box {
         width: 90%;
-        max-width: 900px;
-        padding: 40px 20px;
-        border-radius: 25px;
-        color: white;
-        font-size: 4vw;
-        max-font-size: 70px;
+        height: 30vh;   /* ← ocupa solo el 30% de pantalla, NO crece */
+        display: flex;
+        justify-content: center;
+        align-items: center;
         text-align: center;
+        border-radius: 20px;
+        color: white;
         font-weight: 900;
+        font-size: 8vw;
         transition: transform 0.4s ease-in-out;
     }
 
-    /* Pulsación */
+    /* Pulso solo cuando muestra el estado */
     .pulse {
-        animation: pulseAnim 2s infinite;
+        animation: pulseAnim 1.8s infinite;
     }
 
     @keyframes pulseAnim {
@@ -57,10 +66,11 @@
     }
 
     #meta {
-        margin-top: 20px;
         color: white;
-        font-size: 16px;
         text-align: center;
+        font-size: 4vw;
+        margin: 0;
+        padding: 0;
     }
 </style>
 
@@ -71,7 +81,7 @@
     <h1>ESTADO DEL DESPEGUE:</h1>
     <h2>TAKEOFF STATUS:</h2>
 
-    <div id="box" class="pulse">CARGANDO...</div>
+    <div id="box" class="pulse">CARGANDO…</div>
 
     <div id="meta">Última actualización: —</div>
 
@@ -86,17 +96,16 @@ async function fetchEstado() {
         const text = await res.text();
 
         const json = JSON.parse(text.substring(text.indexOf("{"), text.lastIndexOf("}") + 1));
-        const rows = json.table.rows;
 
-        const estado = rows[0].c[0].v;
-        const actualizado = rows[1].c[0].v;
+        const estado = json.table.rows[0].c[0].v || "ERROR";
+        const actualizado = json.table.rows[1].c[0].v || "—";
 
         const box = document.getElementById("box");
         const meta = document.getElementById("meta");
 
-        // Colores
+        // Color según estado
         if (estado.toLowerCase().includes("abierto")) {
-            box.style.background = "linear-gradient(to bottom, #00c46b, #008848)";
+            box.style.background = "linear-gradient(to bottom, #00d67a, #008f4c)";
         } else {
             box.style.background = "linear-gradient(to bottom, #b30000, #600000)";
         }
