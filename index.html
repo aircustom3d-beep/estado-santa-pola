@@ -1,60 +1,74 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Estado del Despegue</title>
 
 <style>
     body {
+        font-family: Arial, Helvetica, sans-serif;
         margin: 0;
         padding: 0;
-        font-family: Arial, Helvetica, sans-serif;
-        background: #111;
-        color: #fff;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
         text-align: center;
+        background: #f5f5f5;
     }
 
-    h1 { font-size: 6vw; margin-top: 20px; font-weight: 900; }
-    h2 { font-size: 4vw; margin-top: -10px; font-weight: 700; }
-
-    #box {
-        width: 92%;
-        max-width: 1400px;
+    h1 {
         margin-top: 20px;
-        padding: 40px 10px;
+        font-size: 2rem;
+        font-weight: 800;
+    }
+    h2 {
+        margin-top: -10px;
+        font-size: 1rem;
+        font-weight: 700;
+        color: #444;
+    }
+
+    /* CONTENEDOR PRINCIPAL */
+    #box {
+        width: 95%;
+        max-width: 900px;
+        margin: 20px auto;
+        padding: 40px 20px;
         border-radius: 25px;
-        background: linear-gradient(to bottom, #c3c7ca, #888d92);
-        font-size: 10vw;
+        background: linear-gradient(#d0d3d6, #92979b);
+        font-size: 3rem;
         font-weight: 900;
-        color: black;
-        transition: transform 0.4s ease-in-out;
+        transition: transform 0.3s ease;
     }
 
-    /* ANIMACIÓN DE LATIDO */
-    .latido {
-        animation: heartbeat 1.8s infinite ease-in-out;
+    /* ANIMACIÓN LATIDO SOLO EN CARGA */
+    .pulse {
+        animation: pulseAnim 1.6s infinite;
     }
-
-    @keyframes heartbeat {
+    @keyframes pulseAnim {
         0% { transform: scale(1); }
-        30% { transform: scale(1.05); }
-        60% { transform: scale(1); }
+        50% { transform: scale(1.03); }
         100% { transform: scale(1); }
     }
 
-    #meta {
-        margin-top: 20px;
-        font-size: 4vw;
-        color: #ddd;
+    /* COLORES SEGÚN ESTADO */
+    .open   { background: linear-gradient(#32e67f, #0d8c41) !important; color: white; }
+    .closed { background: linear-gradient(#a60000, #5a0000) !important; color: white; }
+
+    /* TEXTO ESTADO GRANDE */
+    #estadoTexto {
+        font-size: 3rem;
+        font-weight: 900;
+    }
+    #estadoIngles {
+        font-size: 1.3rem;
+        margin-top: 5px;
+        font-weight: 700;
     }
 
-    @media (min-width: 900px) {
-        #box { font-size: 4rem; }
-        #meta { font-size: 1.3rem; }
+    /* FECHA */
+    #meta {
+        margin-top: 10px;
+        font-size: 1rem;
+        color: #333;
     }
 </style>
 </head>
@@ -64,60 +78,68 @@
 <h1>ESTADO DEL DESPEGUE:</h1>
 <h2>TAKEOFF STATUS:</h2>
 
-<div id="box">CARGANDO...</div>
+<div id="box" class="pulse">
+    <div id="estadoTexto">CARGANDO...</div>
+    <div id="estadoIngles"></div>
+</div>
+
 <div id="meta">Última actualización: —</div>
 
 <script>
-const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSXHCR_ic2GfcspciaHjEo3w-D_IZS5QXrTdUNL9A2Y-QEKFe-uj16eVRujaueVXlcwPpfppasDtV3f/pubhtml?gid=0&single=true";
+const SHEET_URL =
+"https://docs.google.com/spreadsheets/d/e/2PACX-1vSXHCR_ic2GfcspciaHjEo3w-D_IZS5QXrTdUNL9A2Y-QEKFe-uj16eVRujaueVXlcwPpfppasDtV3f/pub?gid=1147167472&single=true&output=csv";
 
-async function fetchEstado() {
+async function cargarEstado() {
     try {
-        const response = await fetch(url + "&_=" + Date.now()); // evita caché
-        const text = await response.text();
+        const response = await fetch(SHEET_URL + "&_=" + Date.now());
+        const data = await response.text();
+        const filas = data.trim().split("\n");
 
-        // detectar el valor de la celda A1 = estado (ABIERTO / CERRADO)
-        const estadoMatch = text.match(/<td[^>]*>(ABIERTO[^<]*|CERRADO[^<]*)<\/td>/i);
-        // detectar la celda A2 = fecha
-        const fechaMatch = text.match(/<td[^>]*>Actualizado[^<]*<\/td>/i);
+        const estado = filas[0].trim().toUpperCase();
+        const fecha = filas[1] ? filas[1].trim() : "";
 
         const box = document.getElementById("box");
+        const estadoTexto = document.getElementById("estadoTexto");
+        const estadoIng = document.getElementById("estadoIngles");
         const meta = document.getElementById("meta");
 
-        if (!estadoMatch) {
-            box.textContent = "ERROR";
-            meta.textContent = "No se pudo leer el estado";
-            box.classList.remove("latido");
-            return;
-        }
+        // QUITAR animación porque ya no está cargando
+        box.classList.remove("pulse");
 
-        const estado = estadoMatch[1].trim();
-        const fecha = fechaMatch ? fechaMatch[0].replace(/<[^>]*>/g, "") : "—";
-
-        box.textContent = estado;
-        meta.textContent = fecha;
-
-        // color dinámico
         if (estado.includes("ABIERTO")) {
-            box.style.background = "linear-gradient(to bottom, #3ddc84, #1e8f50)";
-        } else {
-            box.style.background = "linear-gradient(to bottom, #cc0000, #600000)";
+            box.className = "open";
+            estadoTexto.textContent = "ABIERTO";
+            estadoIng.textContent = "OPEN";
+        } 
+        else if (estado.includes("CERRADO")) {
+            box.className = "closed";
+            estadoTexto.textContent = "CERRADO";
+            estadoIng.textContent = "CLOSED";
+        } 
+        else {
+            box.className = "pulse";
+            estadoTexto.textContent = "ERROR";
+            estadoIng.textContent = "";
         }
 
-        // activar latido SOLO con estado final
-        box.classList.add("latido");
+        meta.textContent = fecha ? fecha : "Última actualización: —";
 
-    } catch (error) {
-        document.getElementById("box").textContent = "ERROR AL CARGAR";
-        document.getElementById("meta").textContent = "";
-        document.getElementById("box").classList.remove("latido");
+    } catch (e) {
+        console.error("Error cargando datos:", e);
+
+        const box = document.getElementById("box");
+        box.className = "pulse";
+        document.getElementById("estadoTexto").textContent = "ERROR";
+        document.getElementById("estadoIngles").textContent = "";
+        document.getElementById("meta").textContent = "No se pudo obtener la información";
     }
 }
 
-// primera carga
-fetchEstado();
+// Primera carga
+cargarEstado();
 
-// actualización cada 15 segundos
-setInterval(fetchEstado, 15000);
+// Autoactualización cada 15 segundos
+setInterval(cargarEstado, 15000);
 </script>
 
 </body>
