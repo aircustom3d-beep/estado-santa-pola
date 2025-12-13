@@ -41,12 +41,17 @@
     .status-box {
         width: 100%;
         min-height: 35vh;
-        border-radius: 16px;
+        border-radius: 24px; /* ⭐ BORDES REDONDEADOS */
         padding: clamp(20px, 5vw, 40px);
         display: flex;
         flex-direction: column;
         justify-content: center;
         margin: 20px auto;
+        transition: transform 0.5s ease-in-out;
+    }
+
+    /* ⭐ Animación de latido SOLO cuando se aplica esta clase */
+    .heartbeat {
         animation: heartbeat 3s infinite ease-in-out;
     }
 
@@ -69,78 +74,4 @@
 
     .meta {
         margin-top: 20px;
-        font-size: clamp(14px,2vw,18px);
-        opacity: 0.8;
-    }
-</style>
-</head>
-
-<body>
-
-<h1>ESTADO DEL DESPEGUE:</h1>
-<h2>TAKEOFF STATUS:</h2>
-
-<div class="container">
-    <div id="status-box" class="status-box">
-        <div id="estado" class="estado">CARGANDO...</div>
-        <div id="estado-en" class="estado-en"></div>
-    </div>
-    <div id="meta" class="meta">Última actualización: —</div>
-</div>
-
-<script>
-const URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSXHCR_ic2GfcspciaHjEo3w-D_IZ5SQXrTdUNL9A2Y-QEKFe-uj16eVRujaueVXlcwPpfppasDtV3f/pub?output=csv";
-
-function cargarEstado() {
-    Papa.parse(URL + "&t=" + Date.now(), {
-        download: true,
-        header: false,
-        complete: function(res) {
-            try {
-                const row = res.data[1]; // Segunda fila
-
-                if (!row) throw "Fila vacía";
-
-                const estado = (row[0] || "").toUpperCase();
-                const fecha = row[3] || "";
-
-                const box = document.getElementById("status-box");
-                const txt = document.getElementById("estado");
-                const txtEN = document.getElementById("estado-en");
-
-                if (estado.includes("ABIERTO")) {
-                    box.style.background = "linear-gradient(180deg,#34D399,#059669)";
-                    txt.innerText = "ABIERTO";
-                    txtEN.innerText = "OPEN";
-                }
-                else if (estado.includes("CERRADO")) {
-                    box.style.background = "linear-gradient(180deg,#B91C1C,#7F1D1D)";
-                    txt.innerText = "CERRADO";
-                    txtEN.innerText = "CLOSED";
-                }
-                else {
-                    box.style.background = "#6B7280";
-                    txt.innerText = "INDEFINIDO";
-                    txtEN.innerText = "UNDEFINED";
-                }
-
-                document.getElementById("meta").innerText =
-                    "Última actualización: " + fecha;
-
-            } catch (err) {
-                document.getElementById("estado").innerText = "ERROR";
-                document.getElementById("estado-en").innerText = "LOAD ERROR";
-            }
-        }
-    });
-}
-
-// Primera carga
-cargarEstado();
-
-// Recargar cada 15 s
-setInterval(cargarEstado, 15000);
-</script>
-
-</body>
-</html>
+        font-size: clamp(14px,2vw,18p
