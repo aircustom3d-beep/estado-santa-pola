@@ -2,83 +2,77 @@
 <html lang="es">
 <head>
 <meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Estado del despegue</title>
 
 <style>
-  /* ELIMINA BARRAS DE SCROLL */
   html, body {
     margin: 0;
     padding: 0;
-    overflow: hidden; /* 🚫 IMPORTANTE: sin scroll */
-    font-family: Inter, Arial, sans-serif;
     background: transparent;
+    font-family: Inter, Arial, sans-serif;
   }
 
-  /* CONTENEDOR PRINCIPAL AJUSTADO AL 100% DE LA ALTURA */
   .state-container{
     width: 100%;
-    height: 100vh; /* ocupa toda la pantalla */
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: flex-start;
-    overflow: hidden;
-    box-sizing: border-box;
-    padding-top: 10px;
   }
 
   .title-main{
-    font-size: clamp(22px, 6vw, 34px);
+    font-size: clamp(26px, 7vw, 40px);
     font-weight: 900;
     text-transform: uppercase;
     text-align: center;
-    margin: 5px 0 0;
+    margin: 10px 0 0;
   }
 
   .title-sub{
-    font-size: clamp(14px, 4vw, 22px);
+    font-size: clamp(18px, 5vw, 26px);
     font-weight: 900;
     text-transform: uppercase;
     text-align: center;
-    margin: 2px 0 15px;
+    margin: 4px 0 20px;
   }
 
-  /* CUADRO GRANDE PERO AUTOAJUSTABLE */
+  /* CUADRO PRINCIPAL — AHORA MUCHO MÁS GRANDE */
   .status-box{
-    width: 95%;
-    height: 45vh; /* ocupa espacio sin generar scroll */
-    border-radius: 16px;
-    padding: clamp(20px, 5vw, 40px);
+    width: 100%;
+    min-height: 45vh; /* MÁS ALTO PARA MÓVIL */
+    border-radius: 18px;
+    padding: clamp(30px, 7vw, 60px);
     text-align: center;
     display: flex;
     flex-direction: column;
     justify-content: center;
-    box-sizing: border-box;
+    transition: .3s;
   }
 
+  /* TEXTO PRINCIPAL ULTRA GRANDE */
   .mainText{
-    font-size: clamp(42px, 12vw, 110px);
+    font-size: clamp(60px, 16vw, 130px); /* <— AUMENTADO */
     font-weight: 900;
     margin: 0;
     line-height: 1;
   }
 
+  /* TEXTO SECUNDARIO TAMBIÉN MÁS GRANDE */
   .sideText{
-    font-size: clamp(22px, 7vw, 40px);
-    font-weight: 700;
-    margin-top: 10px;
-    opacity: 0.85;
+    font-size: clamp(32px, 10vw, 60px);
+    font-weight: 800;
+    margin-top: 20px;
     text-transform: uppercase;
+    opacity: .85;
   }
 
   .meta{
-    margin-top: 10px;
-    font-size: clamp(12px, 3.5vw, 16px);
+    margin-top: 14px;
+    font-size: clamp(14px, 4vw, 18px);
     color: #333;
   }
 
-  /* COLORES ESTADO */
+  /* Colores de estado */
   .open{
     background: linear-gradient(#29e37d, #1a7a4a);
     color: #002115;
