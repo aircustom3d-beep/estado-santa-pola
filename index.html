@@ -44,7 +44,7 @@ h2 {
     color: #444;
 }
 
-/* RECUADRO QUE SE AJUSTA AL TEXTO */
+/* RECUADRO AJUSTADO AL TEXTO */
 #estado {
     width: 90vw;
     max-width: 900px;
@@ -59,7 +59,7 @@ h2 {
     box-sizing: border-box;
 }
 
-/* TEXTO */
+/* TEXTOS */
 #texto-es {
     font-size: clamp(22px, 7vw, 50px);
     font-weight: 900;
@@ -75,12 +75,12 @@ h2 {
     text-align: center;
 }
 
-/* BOTÓN AVISO */
+/* BOTÓN AVISO (SIEMPRE VISIBLE) */
 #btnAudio {
-    padding: 10px 20px;
+    padding: 12px 22px;
     font-size: 14px;
-    font-weight: 700;
-    border-radius: 22px;
+    font-weight: 800;
+    border-radius: 24px;
     border: none;
     background: #0077ff;
     color: white;
@@ -126,7 +126,9 @@ h2 {
         <div id="texto-en"></div>
     </div>
 
-    <button id="btnAudio" onclick="activarAudio()">🔔 AVÍSAME / NOTIFY ME</button>
+    <button id="btnAudio" onclick="activarAudio()">
+        🔔 AVÍSAME / NOTIFY ME
+    </button>
 
     <div id="meta">—</div>
 
@@ -137,13 +139,20 @@ let audioActivo = false;
 let estadoAnterior = null;
 
 // Audios
-const audioAbierto = new Audio("https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg");
-const audioCerrado = new Audio("https://actions.google.com/sounds/v1/cartoon/descending_whistle_1.ogg");
+const audioAbierto = new Audio(
+  "https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg"
+);
+const audioCerrado = new Audio(
+  "https://actions.google.com/sounds/v1/cartoon/descending_whistle_1.ogg"
+);
 
+/* ACTIVAR AUDIO (UNA SOLA VEZ) */
 function activarAudio() {
+    if (audioActivo) return; // ya activado
+
     audioActivo = true;
 
-    // Desbloqueo de audio (obligatorio en móviles)
+    // Desbloqueo obligatorio en móviles
     audioAbierto.volume = 0;
     audioAbierto.play().then(() => {
         audioAbierto.pause();
@@ -155,6 +164,7 @@ function activarAudio() {
         "🔔 AVISO ACTIVADO / ALERT ENABLED";
 }
 
+/* CARGA DE ESTADO */
 async function cargarEstado() {
     const url =
     "https://docs.google.com/spreadsheets/d/1ZJ4mVkXZyUVBRXLeiSHI2gSOt7JdcYj92bfKtPujU3g/gviz/tq?tqx=out:json&gid=1147167472";
@@ -192,7 +202,7 @@ async function cargarEstado() {
             estadoActual = "CERRADO";
         }
 
-        // 🔊 Sonido solo si cambia el estado
+        /* 🔊 SONIDO EN CADA CAMBIO */
         if (audioActivo && estadoAnterior && estadoAnterior !== estadoActual) {
             if (estadoActual === "ABIERTO") audioAbierto.play();
             if (estadoActual === "CERRADO") audioCerrado.play();
