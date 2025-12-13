@@ -3,77 +3,58 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Estado del despegue</title>
+<title>Estado del Despegue</title>
 
 <style>
     body {
         margin: 0;
         padding: 0;
         font-family: Arial, Helvetica, sans-serif;
-        background: #111827;
-        color: white;
+        background: #111;
+        color: #fff;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
         text-align: center;
     }
 
-    h1 {
-        font-size: clamp(22px, 4vw, 40px);
-        margin-top: 25px;
+    h1 { font-size: 6vw; margin-top: 20px; font-weight: 900; }
+    h2 { font-size: 4vw; margin-top: -10px; font-weight: 700; }
+
+    #box {
+        width: 92%;
+        max-width: 1400px;
+        margin-top: 20px;
+        padding: 40px 10px;
+        border-radius: 25px;
+        background: linear-gradient(to bottom, #c3c7ca, #888d92);
+        font-size: 10vw;
         font-weight: 900;
+        color: black;
+        transition: transform 0.4s ease-in-out;
     }
 
-    h2 {
-        font-size: clamp(16px, 2.5vw, 26px);
-        margin-top: -10px;
-        font-weight: 700;
-        opacity: 0.9;
-    }
-
-    .container {
-        width: 100%;
-        max-width: 900px;
-        margin: 0 auto;
-        padding: 10px;
-    }
-
-    .status-box {
-        width: 100%;
-        min-height: 35vh;
-        border-radius: 26px; /* bordes redondeados */
-        padding: clamp(20px, 5vw, 40px);
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        margin: 20px auto;
-        box-sizing: border-box;
-        transition: transform .4s ease-in-out;
-    }
-
-    /* Latido solo cuando se añade esta clase */
-    .heartbeat {
-        animation: heartbeat 3s infinite ease-in-out;
+    /* ANIMACIÓN DE LATIDO */
+    .latido {
+        animation: heartbeat 1.8s infinite ease-in-out;
     }
 
     @keyframes heartbeat {
         0% { transform: scale(1); }
-        50% { transform: scale(1.03); }
+        30% { transform: scale(1.05); }
+        60% { transform: scale(1); }
         100% { transform: scale(1); }
     }
 
-    .estado {
-        font-size: clamp(40px,10vw,90px);
-        font-weight: 900;
-        margin-bottom: 10px;
-    }
-
-    .estado-en {
-        font-size: clamp(22px,5vw,40px);
-        font-weight: 700;
-    }
-
-    .meta {
+    #meta {
         margin-top: 20px;
-        font-size: clamp(14px,2vw,18px);
-        opacity: 0.8;
+        font-size: 4vw;
+        color: #ddd;
+    }
+
+    @media (min-width: 900px) {
+        #box { font-size: 4rem; }
+        #meta { font-size: 1.3rem; }
     }
 </style>
 </head>
@@ -83,69 +64,60 @@
 <h1>ESTADO DEL DESPEGUE:</h1>
 <h2>TAKEOFF STATUS:</h2>
 
-<div class="container">
-    <div id="status-box" class="status-box">
-        <div id="estado" class="estado">CARGANDO…</div>
-        <div id="estado-en" class="estado-en"></div>
-    </div>
-    <div id="meta" class="meta">Última actualización: —</div>
-</div>
+<div id="box">CARGANDO...</div>
+<div id="meta">Última actualización: —</div>
 
 <script>
-/* GVIZ URL – SIEMPRE FUNCIONA */
-const GVIZ_URL =
-"https://docs.google.com/spreadsheets/d/1ZJ4mVkXZyUVBRXLeiSHI2gSOt7JdcYj92bfKtPujU3g/gviz/tq?tqx=out:json&gid=0";
+const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSXHCR_ic2GfcspciaHjEo3w-D_IZS5QXrTdUNL9A2Y-QEKFe-uj16eVRujaueVXlcwPpfppasDtV3f/pubhtml?gid=0&single=true";
 
-async function cargarEstado() {
+async function fetchEstado() {
     try {
-        const resp = await fetch(GVIZ_URL + "&t=" + Date.now());
-        const text = await resp.text();
+        const response = await fetch(url + "&_=" + Date.now()); // evita caché
+        const text = await response.text();
 
-        /* Extraemos el JSON de dentro de la respuesta GVIZ */
-        const jsonStr = text.substring(text.indexOf("{"), text.lastIndexOf("}") + 1);
-        const data = JSON.parse(jsonStr);
+        // detectar el valor de la celda A1 = estado (ABIERTO / CERRADO)
+        const estadoMatch = text.match(/<td[^>]*>(ABIERTO[^<]*|CERRADO[^<]*)<\/td>/i);
+        // detectar la celda A2 = fecha
+        const fechaMatch = text.match(/<td[^>]*>Actualizado[^<]*<\/td>/i);
 
-        /* La celda A2 es tu estado */
-        const estadoValor = data.table.rows[1].c[0].v.toUpperCase();
-        const fechaValor  = data.table.rows[1].c[3].v || "";
+        const box = document.getElementById("box");
+        const meta = document.getElementById("meta");
 
-        const box = document.getElementById("status-box");
-        const txt = document.getElementById("estado");
-        const txtEN = document.getElementById("estado-en");
-
-        /* Quitamos latido antes de volver a aplicar */
-        box.classList.remove("heartbeat");
-
-        if (estadoValor.includes("ABIERTO")) {
-            box.style.background = "linear-gradient(180deg,#34D399,#059669)";
-            txt.textContent = "ABIERTO";
-            txtEN.textContent = "OPEN";
-            box.classList.add("heartbeat");
-        }
-        else if (estadoValor.includes("CERRADO")) {
-            box.style.background = "linear-gradient(180deg,#B91C1C,#7F1D1D)";
-            txt.textContent = "CERRADO";
-            txtEN.textContent = "CLOSED";
-            box.classList.add("heartbeat");
-        }
-        else {
-            box.style.background = "#6B7280";
-            txt.textContent = estadoValor;
-            txtEN.textContent = "";
+        if (!estadoMatch) {
+            box.textContent = "ERROR";
+            meta.textContent = "No se pudo leer el estado";
+            box.classList.remove("latido");
+            return;
         }
 
-        document.getElementById("meta").textContent =
-            "Última actualización: " + fechaValor;
+        const estado = estadoMatch[1].trim();
+        const fecha = fechaMatch ? fechaMatch[0].replace(/<[^>]*>/g, "") : "—";
 
-    } catch (e) {
-        document.getElementById("estado").textContent = "ERROR";
-        document.getElementById("estado-en").textContent = "LOAD ERROR";
+        box.textContent = estado;
+        meta.textContent = fecha;
+
+        // color dinámico
+        if (estado.includes("ABIERTO")) {
+            box.style.background = "linear-gradient(to bottom, #3ddc84, #1e8f50)";
+        } else {
+            box.style.background = "linear-gradient(to bottom, #cc0000, #600000)";
+        }
+
+        // activar latido SOLO con estado final
+        box.classList.add("latido");
+
+    } catch (error) {
+        document.getElementById("box").textContent = "ERROR AL CARGAR";
+        document.getElementById("meta").textContent = "";
+        document.getElementById("box").classList.remove("latido");
     }
 }
 
-/* Cargar ahora y cada 15s */
-cargarEstado();
-setInterval(cargarEstado, 15000);
+// primera carga
+fetchEstado();
+
+// actualización cada 15 segundos
+setInterval(fetchEstado, 15000);
 </script>
 
 </body>
