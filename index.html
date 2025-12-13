@@ -1,76 +1,121 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <style>
     html, body {
         margin: 0;
         padding: 0;
+        overflow: hidden !important;
         width: 100%;
         height: 100%;
-        overflow: hidden; /* elimina scroll */
+        background: #111;
+        font-family: Arial, sans-serif;
     }
 
-    body {
-        background: #111;
-        font-family: Arial, Helvetica, sans-serif;
-        color: white;
+    #container {
+        width: 100%;
+        height: 100%;
+        overflow: hidden !important;
         display: flex;
         flex-direction: column;
+        justify-content: flex-start;
         align-items: center;
-        text-align: center;
-        box-sizing: border-box;
     }
 
-    h1 {
-        margin: 1vh 0 0 0;
-        font-size: 6vw;
+    h1, h2 {
+        color: white;
+        text-align: center;
+        margin: 10px 0;
         font-weight: 900;
     }
 
-    h2 {
-        margin: 0;
-        font-size: 4vw;
-        font-weight: 700;
-    }
-
-    .box {
-        width: 92%;
-        height: 32vh; /* reducido para evitar overflow */
-        max-height: 38vh;
-        background: linear-gradient(#c7ccd1, #777c82);
+    #box {
+        width: 90%;
+        max-width: 900px;
+        padding: 40px 20px;
         border-radius: 25px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        margin-top: 2vh;
-        transition: transform 0.3s ease-in-out;
-        overflow: hidden; /* asegura que nada se desborde */
+        color: white;
+        font-size: 4vw;
+        max-font-size: 70px;
+        text-align: center;
+        font-weight: 900;
+        transition: transform 0.4s ease-in-out;
     }
 
+    /* Pulsación */
     .pulse {
-        animation: pulse 2.2s infinite;
+        animation: pulseAnim 2s infinite;
     }
 
-    @keyframes pulse {
-        0% { transform: scale(1); }
-        50% { transform: scale(1.03); }
+    @keyframes pulseAnim {
+        0%   { transform: scale(1); }
+        50%  { transform: scale(1.03); }
         100% { transform: scale(1); }
     }
 
-    #estado {
-        font-size: 10vw;
-        font-weight: 900;
-        color: black;
-        line-height: 1;
-    }
-
-    #fecha {
-        margin-top: 2vh;
-        font-size: 3.5vw;
-        font-weight: 300;
-    }
-
-    @media (min-width:900px) {
-        #estado { font-size: 4rem; }
-        #fecha { font-size: 1.6rem; }
-        h1 { font-size: 4rem; }
-        h2 { font-size: 2rem; }
+    #meta {
+        margin-top: 20px;
+        color: white;
+        font-size: 16px;
+        text-align: center;
     }
 </style>
+
+</head>
+<body>
+<div id="container">
+
+    <h1>ESTADO DEL DESPEGUE:</h1>
+    <h2>TAKEOFF STATUS:</h2>
+
+    <div id="box" class="pulse">CARGANDO...</div>
+
+    <div id="meta">Última actualización: —</div>
+
+</div>
+
+<script>
+async function fetchEstado() {
+    const url = "https://docs.google.com/spreadsheets/d/1ZJ4mVkXZyUVBRXLeiSHI2gSOt7JdcYj92bfKtPujU3g/gviz/tq?tqx=out:json&gid=1147167472";
+
+    try {
+        const res = await fetch(url);
+        const text = await res.text();
+
+        const json = JSON.parse(text.substring(text.indexOf("{"), text.lastIndexOf("}") + 1));
+        const rows = json.table.rows;
+
+        const estado = rows[0].c[0].v;
+        const actualizado = rows[1].c[0].v;
+
+        const box = document.getElementById("box");
+        const meta = document.getElementById("meta");
+
+        // Colores
+        if (estado.toLowerCase().includes("abierto")) {
+            box.style.background = "linear-gradient(to bottom, #00c46b, #008848)";
+        } else {
+            box.style.background = "linear-gradient(to bottom, #b30000, #600000)";
+        }
+
+        box.innerHTML = estado.toUpperCase();
+        meta.innerHTML = actualizado;
+
+        box.classList.add("pulse");
+
+    } catch (e) {
+        document.getElementById("box").innerHTML = "ERROR";
+        document.getElementById("box").style.background = "gray";
+        document.getElementById("meta").innerHTML = "No se pudo leer el estado";
+    }
+}
+
+fetchEstado();
+setInterval(fetchEstado, 15000);
+</script>
+
+</body>
+</html>
