@@ -26,7 +26,6 @@ html, body {
     gap: 2vh;
 }
 
-/* Encabezados */
 h1 {
     font-size: clamp(20px, 6vw, 40px);
     font-weight: 900;
@@ -43,22 +42,18 @@ h2 {
     color: #444;
 }
 
-/* RECUADRO QUE SE AJUSTA AL TEXTO */
 #estado {
     width: 90vw;
     max-width: 900px;
     padding: 4vh 4vw;
     border-radius: 28px;
-
     display: inline-flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-
     box-sizing: border-box;
 }
 
-/* Texto */
 #texto-es {
     font-size: clamp(22px, 7vw, 50px);
     font-weight: 900;
@@ -74,20 +69,14 @@ h2 {
     text-align: center;
 }
 
-/* Pie */
 #meta {
     font-size: clamp(12px, 3.5vw, 18px);
     color: #555;
     text-align: center;
 }
 
-/* Animaciones */
-.pulse-open {
-    animation: pulseOpen 2.5s infinite;
-}
-.pulse-closed {
-    animation: pulseClosed 1.6s infinite;
-}
+.pulse-open { animation: pulseOpen 2.5s infinite; }
+.pulse-closed { animation: pulseClosed 1.6s infinite; }
 
 @keyframes pulseOpen {
     0% { transform: scale(1); }
@@ -103,7 +92,7 @@ h2 {
 </head>
 
 <body>
-<div id="app">
+<div id="app" onclick="habilitarAudio()">
 
     <h1>ESTADO DEL DESPEGUE:</h1>
     <h2>TAKEOFF STATUS:</h2>
@@ -113,11 +102,22 @@ h2 {
         <div id="texto-en"></div>
     </div>
 
-    <div id="meta">Última actualización: —</div>
+    <div id="meta">Toca la pantalla para activar sonido</div>
 
 </div>
 
 <script>
+const sonidoAbierto = new Audio("https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg");
+const sonidoCerrado = new Audio("https://actions.google.com/sounds/v1/cartoon/descending_whistle_1.ogg");
+
+let audioHabilitado = false;
+let estadoAnterior = null;
+
+function habilitarAudio() {
+    audioHabilitado = true;
+    document.getElementById("meta").innerText = "Sonido activado";
+}
+
 async function cargarEstado() {
     const url =
     "https://docs.google.com/spreadsheets/d/1ZJ4mVkXZyUVBRXLeiSHI2gSOt7JdcYj92bfKtPujU3g/gviz/tq?tqx=out:json&gid=1147167472";
@@ -137,18 +137,29 @@ async function cargarEstado() {
 
         box.classList.remove("pulse-open", "pulse-closed");
 
+        let estadoActual;
+
         if (estadoRaw.includes("abierto")) {
             box.style.background = "linear-gradient(#1fe38c, #0a9b5a)";
             es.innerText = "DESPEGUE AUTORIZADO";
             en.innerText = "TAKEOFF ALLOWED";
             box.classList.add("pulse-open");
+            estadoActual = "ABIERTO";
         } else {
             box.style.background = "linear-gradient(#c00000, #700000)";
             es.innerText = "DESPEGUE NO AUTORIZADO";
             en.innerText = "TAKEOFF NOT ALLOWED";
             box.classList.add("pulse-closed");
+            estadoActual = "CERRADO";
         }
 
+        // 🔊 REPRODUCIR SONIDO SOLO SI CAMBIA EL ESTADO
+        if (audioHabilitado && estadoAnterior && estadoAnterior !== estadoActual) {
+            if (estadoActual === "ABIERTO") sonidoAbierto.play();
+            if (estadoActual === "CERRADO") sonidoCerrado.play();
+        }
+
+        estadoAnterior = estadoActual;
         meta.innerText = actualizado;
 
     } catch {
@@ -165,3 +176,5 @@ setInterval(cargarEstado, 15000);
 
 </body>
 </html>
+
+
