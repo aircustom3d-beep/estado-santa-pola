@@ -19,68 +19,62 @@ html, body {
 #app {
     width: 100vw;
     height: 100vh;
-    overflow: hidden;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 1.4vh;
+    gap: 2vh;
 }
 
+/* ENCABEZADOS */
 h1 {
-    color: #000;
-    font-weight: 900;
     font-size: clamp(20px, 6vw, 40px);
+    font-weight: 900;
     margin: 0;
     text-align: center;
+    color: #000;
 }
 
 h2 {
-    color: #444;
-    font-weight: 700;
     font-size: clamp(14px, 4vw, 24px);
+    font-weight: 700;
     margin: 0;
     text-align: center;
+    color: #444;
 }
 
-/* 🔥 RECUADRO PRINCIPAL */
+/* RECUADRO PRINCIPAL (AUTOAJUSTABLE AL TEXTO) */
 #estado {
     width: 90vw;
-    min-height: 38vh;      /* MÁS ALTO */
-    padding: 3vh 2vw;      /* ESPACIO INTERIOR */
-    border-radius: 26px;
+    padding: 4vh 4vw;          /* controla el tamaño visual */
+    border-radius: 28px;
+    text-align: center;
+    box-sizing: border-box;
+
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
+}
+
+/* TEXTO PRINCIPAL */
+#texto-es {
+    font-size: clamp(22px, 7vw, 50px);
     font-weight: 900;
-    text-align: center;
-    box-sizing: border-box;
+    color: white;
 }
 
-/* TEXTO */
-#texto {
-    font-size: clamp(28px, 9vw, 64px);
-    color: black;
+#texto-en {
+    margin-top: 1vh;
+    font-size: clamp(16px, 5vw, 32px);
+    font-weight: 700;
+    color: white;
 }
 
-#subtexto {
-    font-size: clamp(16px, 4.5vw, 26px);
-    margin-top: 0.5vh;
-    color: black;
-}
-
-#aviso {
-    margin-top: 1.2vh;
-    font-size: clamp(13px, 3.8vw, 20px);
-    font-weight: 600;
-    line-height: 1.25;
-    color: black;
-}
-
+/* PIE */
 #meta {
+    font-size: clamp(12px, 3.5vw, 18px);
     color: #555;
-    font-size: clamp(12px, 3.2vw, 18px);
     text-align: center;
 }
 
@@ -114,9 +108,8 @@ h2 {
     <h2>TAKEOFF STATUS:</h2>
 
     <div id="estado">
-        <div id="texto">CARGANDO…</div>
-        <div id="subtexto"></div>
-        <div id="aviso"></div>
+        <div id="texto-es">CARGANDO…</div>
+        <div id="texto-en"></div>
     </div>
 
     <div id="meta">Última actualización: —</div>
@@ -137,24 +130,21 @@ async function cargarEstado() {
         const actualizado = j.table.rows[1].c[0].v;
 
         const box = document.getElementById("estado");
-        const texto = document.getElementById("texto");
-        const sub = document.getElementById("subtexto");
-        const aviso = document.getElementById("aviso");
+        const es = document.getElementById("texto-es");
+        const en = document.getElementById("texto-en");
         const meta = document.getElementById("meta");
 
         box.classList.remove("pulse-open", "pulse-closed");
 
         if (estadoRaw.includes("abierto")) {
             box.style.background = "linear-gradient(#1fe38c, #0a9b5a)";
-            texto.innerText = "ABIERTO";
-            sub.innerText = "OPEN";
-            aviso.innerHTML = "Despegue autorizado<br>Takeoff allowed";
+            es.innerText = "DESPEGUE AUTORIZADO";
+            en.innerText = "TAKEOFF ALLOWED";
             box.classList.add("pulse-open");
         } else {
             box.style.background = "linear-gradient(#c00000, #700000)";
-            texto.innerText = "CERRADO";
-            sub.innerText = "CLOSED";
-            aviso.innerHTML = "Despegue NO autorizado<br>Takeoff NOT allowed";
+            es.innerText = "DESPEGUE NO AUTORIZADO";
+            en.innerText = "TAKEOFF NOT ALLOWED";
             box.classList.add("pulse-closed");
         }
 
@@ -162,17 +152,16 @@ async function cargarEstado() {
 
     } catch (e) {
         const box = document.getElementById("estado");
-        document.getElementById("texto").innerText = "ERROR";
-        document.getElementById("subtexto").innerText = "";
-        document.getElementById("aviso").innerText = "No se pudo leer el estado";
-        box.style.background = "#ccc";
-        box.classList.remove("pulse-open", "pulse-closed");
-        document.getElementById("meta").innerText = "—";
+        box.style.background = "#999";
+        document.getElementById("texto-es").innerText = "ERROR";
+        document.getElementById("texto-en").innerText = "";
+        document.getElementById("meta").innerText = "No se pudo leer el estado";
     }
 }
 
 cargarEstado();
 setInterval(cargarEstado, 15000);
 </script>
+
 </body>
 </html>
