@@ -145,14 +145,14 @@ async function cargarEstado() {
             document.getElementById("texto-es").innerText =
                 "DESPEGUE AUTORIZADO";
             document.getElementById("texto-en").innerText =
-                "TAKEOFF ALLOWED";
+                "TAKEOFF AUTHORIZED";
             box.classList.add("pulse-open");
         } else {
             box.style.background = "linear-gradient(#c00000, #700000)";
             document.getElementById("texto-es").innerText =
                 "DESPEGUE NO AUTORIZADO";
             document.getElementById("texto-en").innerText =
-                "TAKEOFF NOT ALLOWED";
+                "TAKEOFF NOT AUTHORIZED";
             box.classList.add("pulse-closed");
         }
 
@@ -173,3 +173,4 @@ setInterval(cargarEstado, 15000);
 
 </body>
 </html>
+
